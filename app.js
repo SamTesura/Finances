@@ -64,13 +64,55 @@ const translations = {
   },
 };
 
+/* Componente NumericInput para gestionar la edición y el formateo en vivo */
+function NumericInput({ value, onChange, placeholder }) {
+  const [editingValue, setEditingValue] = useState(value ? value.toString() : "");
+
+  useEffect(() => {
+    setEditingValue(value ? value.toString() : "");
+  }, [value]);
+
+  function formatNumber(val) {
+    let number = parseFloat(val);
+    if (isNaN(number)) return "";
+    return number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  const handleFocus = () => {
+    // Al hacer focus se muestra el valor sin formateo
+    setEditingValue(value ? value.toString() : "");
+  };
+
+  const handleBlur = () => {
+    const numeric = parseFloat(editingValue);
+    const formatted = isNaN(numeric) ? "" : formatNumber(numeric);
+    setEditingValue(formatted);
+    if (!isNaN(numeric)) onChange(numeric.toString());
+  };
+
+  const handleChange = (e) => {
+    setEditingValue(e.target.value);
+  };
+
+  return (
+    <input
+      type="text"
+      value={editingValue}
+      placeholder={placeholder}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onChange={handleChange}
+    />
+  );
+}
+
 function FinanceApp() {
   const [activeTab, setActiveTab] = useState("balance");
   const [lang, setLang] = useState("es");
   const t = translations[lang];
 
   function toggleLanguage() {
-    setLang((prev) => (prev === "en" ? "es" : "en"));
+    setLang(prev => (prev === "en" ? "es" : "en"));
   }
 
   return (
@@ -83,28 +125,20 @@ function FinanceApp() {
         <p>{t.subtitle}</p>
       </header>
       <nav className="nav-tabs">
-        <div
-          className={`nav-tab ${activeTab === "balance" ? "active" : ""}`}
-          onClick={() => setActiveTab("balance")}
-        >
+        <div className={`nav-tab ${activeTab === "balance" ? "active" : ""}`}
+          onClick={() => setActiveTab("balance")}>
           {t.balanceTab}
         </div>
-        <div
-          className={`nav-tab ${activeTab === "transactions" ? "active" : ""}`}
-          onClick={() => setActiveTab("transactions")}
-        >
+        <div className={`nav-tab ${activeTab === "transactions" ? "active" : ""}`}
+          onClick={() => setActiveTab("transactions")}>
           {t.transactionsTab}
         </div>
-        <div
-          className={`nav-tab ${activeTab === "events" ? "active" : ""}`}
-          onClick={() => setActiveTab("events")}
-        >
+        <div className={`nav-tab ${activeTab === "events" ? "active" : ""}`}
+          onClick={() => setActiveTab("events")}>
           {t.eventsTab}
         </div>
-        <div
-          className={`nav-tab ${activeTab === "calendar" ? "active" : ""}`}
-          onClick={() => setActiveTab("calendar")}
-        >
+        <div className={`nav-tab ${activeTab === "calendar" ? "active" : ""}`}
+          onClick={() => setActiveTab("calendar")}>
           {t.calendarTab}
         </div>
       </nav>
@@ -122,12 +156,11 @@ function FinanceApp() {
  * BALANCE TAB
  ************************************************/
 function BalanceTab({ t, lang }) {
-  // Genera fechas semanales como objeto {formatted, full}
   const [dates, setDates] = useState([]);
   const tableRef = useRef(null);
   const chartRef = useRef(null);
 
-  // Desplaza automáticamente la tabla a la fecha actual
+  // Desplaza la tabla a la fecha actual
   useEffect(() => {
     const d = generateWeeklyDates();
     setDates(d);
@@ -145,22 +178,21 @@ function BalanceTab({ t, lang }) {
     }, 500);
   }, []);
 
-  // Estados de secciones y meta única (editable)
+  // Estados para secciones y meta única
   const [ingresos, setIngresos] = useState([]);
   const [tarjeta, setTarjeta] = useState([]);
   const [gastos, setGastos] = useState([]);
   const [cuenta, setCuenta] = useState([]);
   const [cash, setCash] = useState([]);
-  // Estado único para balance meta, que será un objeto o null
+  // balanceMeta es un objeto { raw, formatted, amount, enabled } o null
   const [balanceMeta, setBalanceMeta] = useState(null);
 
-  // Persistir cambios en localStorage
+  // Persistir datos
   useEffect(() => {
     const data = { ingresos, tarjeta, gastos, cuenta, cash, balanceMeta };
     localStorage.setItem("financeData", JSON.stringify(data));
   }, [ingresos, tarjeta, gastos, cuenta, cash, balanceMeta]);
 
-  // Cargar datos persistidos
   function loadData() {
     const data = JSON.parse(localStorage.getItem("financeData"));
     if (data) {
@@ -178,9 +210,9 @@ function BalanceTab({ t, lang }) {
     }
   }
 
-  // Modal para preguntar si la fila es recurrente y realizar autofill
+  // Modal para preguntar por recurrencia al agregar una fila
   function addRowToSection(setter) {
-    setter((prev) => [...prev, { label: "", values: Array(dates.length).fill("") }]);
+    setter(prev => [...prev, { label: "", values: Array(dates.length).fill("") }]);
     Swal.fire({
       title: t.recurringQuestion,
       html: `
@@ -197,9 +229,9 @@ function BalanceTab({ t, lang }) {
           value: document.getElementById("recurrent-value").value
         };
       }
-    }).then((result) => {
+    }).then(result => {
       if (result.isConfirmed && result.value.recurrent) {
-        setter((prev) => {
+        setter(prev => {
           const updated = [...prev];
           updated[updated.length - 1].values = Array(dates.length).fill(result.value.value);
           return updated;
@@ -208,14 +240,13 @@ function BalanceTab({ t, lang }) {
     });
   }
 
-  // Función que formatea valores numéricos con separación de miles y dos decimales
+  // Función de formateo para mostrar comas y dos decimales
   function formatNumber(value) {
     let number = parseFloat(value);
     if (isNaN(number)) return "";
     return number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // Actualizar label y valores en las filas
   function updateLabel(section, setter, rowIndex, newLabel) {
     setter(section.map((row, i) => (i === rowIndex ? { ...row, label: newLabel } : row)));
   }
@@ -237,7 +268,7 @@ function BalanceTab({ t, lang }) {
     return section.reduce((acc, row) => acc + (parseFloat(row.values[colIndex]) || 0), 0);
   }
 
-  // Calcular Balance y Balance Acumulado
+  // Calcular balance y acumulado
   const balanceRow = dates.map((_, colIndex) =>
     sumSection(ingresos, colIndex) -
     sumSection(tarjeta, colIndex) -
@@ -246,9 +277,9 @@ function BalanceTab({ t, lang }) {
     sumSection(cash, colIndex)
   );
   let runningTotal = 0;
-  const cumulativeRow = balanceRow.map((val) => (runningTotal += val));
+  const cumulativeRow = balanceRow.map(val => runningTotal += val);
 
-  // Modal para establecer (o editar) el Balance Meta único; se formatea en vivo
+  // Modal para establecer o editar el Balance Meta único; el input se formatea en vivo usando el evento onBlur mediante un listener inline en SweetAlert2
   async function handleSetMeta() {
     const defaultDate = new Date().toISOString().split("T")[0];
     const defaultDateValue = balanceMeta ? new Date(balanceMeta.raw).toISOString().split("T")[0] : defaultDate;
@@ -258,7 +289,7 @@ function BalanceTab({ t, lang }) {
       title: t.meta,
       html:
         `<input id="meta-amount" type="text" class="swal2-input" placeholder="${t.meta} amount" value="${defaultAmount ? formatNumber(defaultAmount) : ''}">` +
-        `<input id="meta-date" type="date" class="swal2-input" placeholder="Select target date" value="${defaultDateValue}">`,
+        `<input id="meta-date" type="date" class="swal2-input" value="${defaultDateValue}">`,
       focusConfirm: false,
       willOpen: () => {
         const metaAmountInput = document.getElementById("meta-amount");
@@ -272,13 +303,13 @@ function BalanceTab({ t, lang }) {
       },
       preConfirm: () => {
         return {
-          amount: document.getElementById("meta-amount").value,
+          amount: document.getElementById("meta-amount").value.replace(/,/g, ""),
           date: document.getElementById("meta-date").value
         };
       }
     });
     if (formValues) {
-      const amount = parseFloat(formValues.amount.replace(/,/g, ""));
+      const amount = parseFloat(formValues.amount);
       const metaDateRaw = new Date(formValues.date);
       if (isNaN(amount) || isNaN(metaDateRaw)) {
         Swal.fire("Error", lang === "en" ? "Invalid amount or date" : "Monto o fecha inválidos", "error");
@@ -292,7 +323,7 @@ function BalanceTab({ t, lang }) {
     }
   }
 
-  // Configurar gráfica con línea meta progresiva hasta la fecha meta
+  // Configurar la gráfica, trazando la línea meta progresiva hasta la fecha meta (se usa interpolación lineal hasta el índice)
   useEffect(() => {
     if (!chartRef.current) return;
     const ctx = chartRef.current.getContext("2d");
@@ -314,9 +345,9 @@ function BalanceTab({ t, lang }) {
       if (targetIndex !== -1) {
         filteredDates = dates.slice(0, targetIndex + 1);
         filteredCumulativeRow = cumulativeRow.slice(0, targetIndex + 1);
-        const progressiveData = filteredDates.map((d, i) => {
-          return (balanceMeta.amount / (targetIndex + 1)) * (i + 1);
-        });
+        const progressiveData = filteredDates.map((d, i) =>
+          (balanceMeta.amount / (targetIndex + 1)) * (i + 1)
+        );
         datasets.push({
           label: t.meta,
           data: progressiveData,
@@ -377,12 +408,7 @@ function BalanceTab({ t, lang }) {
         <button className="button delete-btn" onClick={() => {
           setBalanceMeta(null);
           localStorage.setItem("financeData", JSON.stringify({
-            ingresos,
-            tarjeta,
-            gastos,
-            cuenta,
-            cash,
-            balanceMeta: null
+            ingresos, tarjeta, gastos, cuenta, cash, balanceMeta: null
           }));
           Swal.fire("Success", lang === "en" ? "Target cleared" : "Meta borrada", "success");
         }}>
@@ -421,10 +447,10 @@ function BalanceTab({ t, lang }) {
                 </td>
                 {row.values.map((val, colIndex) => (
                   <td key={colIndex}>
-                    <input
-                      type="text"
-                      value={formatNumber(val.toString())}
-                      onChange={(e) => updateValue(ingresos, setIngresos, rowIndex, colIndex, e.target.value)}
+                    <NumericInput
+                      value={val}
+                      placeholder=""
+                      onChange={(newVal) => updateValue(ingresos, setIngresos, rowIndex, colIndex, newVal)}
                     />
                   </td>
                 ))}
@@ -457,10 +483,10 @@ function BalanceTab({ t, lang }) {
                 </td>
                 {row.values.map((val, colIndex) => (
                   <td key={colIndex}>
-                    <input
-                      type="text"
-                      value={formatNumber(val.toString())}
-                      onChange={(e) => updateValue(tarjeta, setTarjeta, rowIndex, colIndex, e.target.value)}
+                    <NumericInput
+                      value={val}
+                      placeholder=""
+                      onChange={(newVal) => updateValue(tarjeta, setTarjeta, rowIndex, colIndex, newVal)}
                     />
                   </td>
                 ))}
@@ -493,10 +519,10 @@ function BalanceTab({ t, lang }) {
                 </td>
                 {row.values.map((val, colIndex) => (
                   <td key={colIndex}>
-                    <input
-                      type="text"
-                      value={formatNumber(val.toString())}
-                      onChange={(e) => updateValue(gastos, setGastos, rowIndex, colIndex, e.target.value)}
+                    <NumericInput
+                      value={val}
+                      placeholder=""
+                      onChange={(newVal) => updateValue(gastos, setGastos, rowIndex, colIndex, newVal)}
                     />
                   </td>
                 ))}
@@ -529,10 +555,10 @@ function BalanceTab({ t, lang }) {
                 </td>
                 {row.values.map((val, colIndex) => (
                   <td key={colIndex}>
-                    <input
-                      type="text"
-                      value={formatNumber(val.toString())}
-                      onChange={(e) => updateValue(cuenta, setCuenta, rowIndex, colIndex, e.target.value)}
+                    <NumericInput
+                      value={val}
+                      placeholder=""
+                      onChange={(newVal) => updateValue(cuenta, setCuenta, rowIndex, colIndex, newVal)}
                     />
                   </td>
                 ))}
@@ -565,10 +591,10 @@ function BalanceTab({ t, lang }) {
                 </td>
                 {row.values.map((val, colIndex) => (
                   <td key={colIndex}>
-                    <input
-                      type="text"
-                      value={formatNumber(val.toString())}
-                      onChange={(e) => updateValue(cash, setCash, rowIndex, colIndex, e.target.value)}
+                    <NumericInput
+                      value={val}
+                      placeholder=""
+                      onChange={(newVal) => updateValue(cash, setCash, rowIndex, colIndex, newVal)}
                     />
                   </td>
                 ))}
@@ -628,7 +654,7 @@ function TransactionsTab({ t }) {
   const [referenceDate, setReferenceDate] = useState(startOfYear);
 
   function updateTransaction(index, field, value) {
-    setTransactions((prev) =>
+    setTransactions(prev =>
       prev.map((tran, i) => {
         if (i !== index) return tran;
         const updatedTran = { ...tran, [field]: value };
@@ -658,7 +684,7 @@ function TransactionsTab({ t }) {
   }
 
   function addTransaction() {
-    setTransactions((prev) => [
+    setTransactions(prev => [
       ...prev,
       {
         fecha: "",
@@ -674,12 +700,12 @@ function TransactionsTab({ t }) {
         debitosAlCorte: "",
         dif: "",
         balanceAl: "",
-      },
+      }
     ]);
   }
 
   function deleteTransaction(index) {
-    setTransactions((prev) => prev.filter((_, i) => i !== index));
+    setTransactions(prev => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -815,17 +841,17 @@ function EventsTab({ t }) {
   const [events, setEvents] = useState([]);
 
   function updateEvent(index, field, value) {
-    setEvents((prev) =>
+    setEvents(prev =>
       prev.map((ev, i) => (i === index ? { ...ev, [field]: value } : ev))
     );
   }
 
   function addEvent() {
-    setEvents((prev) => [...prev, { mes: "", dia: "", evento: "", presupuesto: "" }]);
+    setEvents(prev => [...prev, { mes: "", dia: "", evento: "", presupuesto: "" }]);
   }
 
   function deleteEvent(index) {
-    setEvents((prev) => prev.filter((_, i) => i !== index));
+    setEvents(prev => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -923,21 +949,16 @@ function CalendarView({ t }) {
   function handlePrevMonth() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   }
-
   function handleNextMonth() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   }
-
   function handleDayClick(day) {
     if (day === "") return;
     setSelectedDay(day);
   }
-
-  // Simulación: obtiene detalles del balance para el día
   function getBalanceDetails(day) {
     return day % 2 === 0 ? `Detalles del balance para el día ${day}` : "";
   }
-
   return (
     <div className="calendar-container">
       <div className="calendar-header">
@@ -984,7 +1005,6 @@ function generateWeeklyDates() {
   }
   return dates;
 }
-
 function formatDate(dateObj) {
   const day = String(dateObj.getDate()).padStart(2, "0");
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
