@@ -17,11 +17,11 @@ const translations = {
     balance: "Balance",
     cumulative: "Cumulative Balance",
     meta: "Set Target",
-    metaSet: "Target balance set for",
-    clearMeta: "Clear Target",
     addTransaction: "Add Transaction",
     addEvent: "Add Event",
     enterMeta: "Enter your target balance and date (YYYY-MM-DD) separated by a comma. Example: 10000,2023-09-15",
+    metaSet: "Target balance set for",
+    clearMeta: "Clear Target",
     detailsFor: "Budget details for",
     recurringQuestion: "Is this row recurrent?",
     recurringValue: "Enter the value to be repeated:",
@@ -46,10 +46,10 @@ const translations = {
     addCash: "+ Cash",
     balance: "Balance",
     cumulative: "Balance Acumulado",
+    meta: "Establecer Meta",
     addTransaction: "Añadir Transacción",
     addEvent: "Añadir Evento",
     enterMeta: "Ingrese su balance meta y la fecha (AAAA-MM-DD) separados por coma. Ejemplo: 10000,2023-09-15",
-    meta: "Establecer Meta",
     metaSet: "Balance meta establecido para",
     clearMeta: "Borrar Meta",
     detailsFor: "Detalles presupuestarios para",
@@ -127,7 +127,7 @@ function BalanceTab({ t, lang }) {
   const tableRef = useRef(null);
   const chartRef = useRef(null);
 
-  // Para desplazar la tabla automáticamente a la fecha actual
+  // Desplaza automáticamente la tabla a la fecha actual
   useEffect(() => {
     const d = generateWeeklyDates();
     setDates(d);
@@ -151,7 +151,7 @@ function BalanceTab({ t, lang }) {
   const [gastos, setGastos] = useState([]);
   const [cuenta, setCuenta] = useState([]);
   const [cash, setCash] = useState([]);
-  // Estado único para balance meta
+  // Estado único para balance meta, que será un objeto o null
   const [balanceMeta, setBalanceMeta] = useState(null);
 
   // Persistir cambios en localStorage
@@ -178,11 +178,9 @@ function BalanceTab({ t, lang }) {
     }
   }
 
-  // Agregar fila a una sección con modal para recurrencia
+  // Modal para preguntar si la fila es recurrente y realizar autofill
   function addRowToSection(setter) {
-    // Agregar la nueva fila vacía
     setter((prev) => [...prev, { label: "", values: Array(dates.length).fill("") }]);
-    // Lanzar modal para preguntar si es recurrente
     Swal.fire({
       title: t.recurringQuestion,
       html: `
@@ -201,7 +199,6 @@ function BalanceTab({ t, lang }) {
       }
     }).then((result) => {
       if (result.isConfirmed && result.value.recurrent) {
-        // Se actualiza la última fila con el valor recurrente en todas las celdas
         setter((prev) => {
           const updated = [...prev];
           updated[updated.length - 1].values = Array(dates.length).fill(result.value.value);
@@ -211,19 +208,17 @@ function BalanceTab({ t, lang }) {
     });
   }
 
-  // Función para formatear números en vivo con separación de miles
+  // Función que formatea valores numéricos con separación de miles y dos decimales
   function formatNumber(value) {
-    const cleanValue = value.toString().replace(/[^0-9.]/g, "");
-    const number = parseFloat(cleanValue);
+    let number = parseFloat(value);
     if (isNaN(number)) return "";
-    return number.toLocaleString();
+    return number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // Actualizar label de la fila
+  // Actualizar label y valores en las filas
   function updateLabel(section, setter, rowIndex, newLabel) {
     setter(section.map((row, i) => (i === rowIndex ? { ...row, label: newLabel } : row)));
   }
-  // Actualizar valor de celda; se quitan las comas al guardar y se formatea al mostrar
   function updateValue(section, setter, rowIndex, colIndex, newValue) {
     setter(section.map((row, i) => {
       if (i === rowIndex) {
@@ -235,13 +230,9 @@ function BalanceTab({ t, lang }) {
       return row;
     }));
   }
-
-  // Eliminar fila
   function deleteRow(section, setter, rowIndex) {
     setter(section.filter((_, i) => i !== rowIndex));
   }
-
-  // Sumar columna de una sección
   function sumSection(section, colIndex) {
     return section.reduce((acc, row) => acc + (parseFloat(row.values[colIndex]) || 0), 0);
   }
@@ -257,7 +248,7 @@ function BalanceTab({ t, lang }) {
   let runningTotal = 0;
   const cumulativeRow = balanceRow.map((val) => (runningTotal += val));
 
-  // Modal para establecer (o editar) el Balance Meta único
+  // Modal para establecer (o editar) el Balance Meta único; se formatea en vivo
   async function handleSetMeta() {
     const defaultDate = new Date().toISOString().split("T")[0];
     const defaultDateValue = balanceMeta ? new Date(balanceMeta.raw).toISOString().split("T")[0] : defaultDate;
@@ -266,9 +257,19 @@ function BalanceTab({ t, lang }) {
     const { value: formValues } = await Swal.fire({
       title: t.meta,
       html:
-        `<input id="meta-amount" type="number" class="swal2-input" placeholder="${t.meta} amount" value="${defaultAmount}">` +
+        `<input id="meta-amount" type="text" class="swal2-input" placeholder="${t.meta} amount" value="${defaultAmount ? formatNumber(defaultAmount) : ''}">` +
         `<input id="meta-date" type="date" class="swal2-input" placeholder="Select target date" value="${defaultDateValue}">`,
       focusConfirm: false,
+      willOpen: () => {
+        const metaAmountInput = document.getElementById("meta-amount");
+        metaAmountInput.addEventListener("input", (e) => {
+          let raw = e.target.value.replace(/,/g, '');
+          let num = parseFloat(raw);
+          if (!isNaN(num)) {
+            e.target.value = num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+        });
+      },
       preConfirm: () => {
         return {
           amount: document.getElementById("meta-amount").value,
@@ -277,21 +278,21 @@ function BalanceTab({ t, lang }) {
       }
     });
     if (formValues) {
-      const amount = parseFloat(formValues.amount);
+      const amount = parseFloat(formValues.amount.replace(/,/g, ""));
       const metaDateRaw = new Date(formValues.date);
       if (isNaN(amount) || isNaN(metaDateRaw)) {
-        Swal.fire("Error", "Invalid amount or date", "error");
+        Swal.fire("Error", lang === "en" ? "Invalid amount or date" : "Monto o fecha inválidos", "error");
         return;
       }
       const dayMeta = String(metaDateRaw.getDate()).padStart(2, "0");
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const formatted = `${dayMeta}-${monthNames[metaDateRaw.getMonth()]}`;
       setBalanceMeta({ raw: metaDateRaw, formatted, amount, enabled: true });
-      Swal.fire("Success", `${t.metaSet} ${formatted}: ${amount}`, "success");
+      Swal.fire("Success", `${t.metaSet} ${formatted}: ${formatNumber(amount)}`, "success");
     }
   }
 
-  // Configurar gráfica, traza la línea meta progresiva hasta la fecha meta
+  // Configurar gráfica con línea meta progresiva hasta la fecha meta
   useEffect(() => {
     if (!chartRef.current) return;
     const ctx = chartRef.current.getContext("2d");
@@ -347,7 +348,7 @@ function BalanceTab({ t, lang }) {
                 borderWidth: 2,
                 label: {
                   enabled: true,
-                  content: `${t.meta}: ${balanceMeta.amount}`,
+                  content: `${t.meta}: ${formatNumber(balanceMeta.amount)}`,
                   backgroundColor: "rgba(0,200,83,0.7)",
                 },
               },
@@ -364,7 +365,7 @@ function BalanceTab({ t, lang }) {
   }, [dates, cumulativeRow, balanceMeta, t]);
 
   return (
-     <div>
+    <div>
       <h2>{t.balanceTab}</h2>
       <div className="add-buttons-container">
         <button className="button" onClick={() => addRowToSection(setIngresos)}>{t.addIncome}</button>
@@ -383,7 +384,7 @@ function BalanceTab({ t, lang }) {
             cash,
             balanceMeta: null
           }));
-          Swal.fire("Success", t.clearMeta + " successfully cleared", "success");
+          Swal.fire("Success", lang === "en" ? "Target cleared" : "Meta borrada", "success");
         }}>
           {t.clearMeta}
         </button>
@@ -580,12 +581,12 @@ function BalanceTab({ t, lang }) {
             ))}
             {/* Balance y Acumulado */}
             {dates.length > 0 && (
-               <React.Fragment>
+              <React.Fragment>
                 <tr style={{ background: "#e8f0fe" }}>
                   <td style={{ fontWeight: "bold" }}>{t.balance}</td>
                   {balanceRow.map((val, i) => (
                     <td key={i} className={val < 0 ? "negative" : ""}>
-                      <strong>{val}</strong>
+                      <strong>{formatNumber(val)}</strong>
                     </td>
                   ))}
                 </tr>
@@ -593,7 +594,7 @@ function BalanceTab({ t, lang }) {
                   <td style={{ fontWeight: "bold" }}>{t.cumulative}</td>
                   {cumulativeRow.map((val, i) => (
                     <td key={i}>
-                      <strong>{val}</strong>
+                      <strong>{formatNumber(val)}</strong>
                     </td>
                   ))}
                 </tr>
@@ -626,14 +627,12 @@ function TransactionsTab({ t }) {
   const startOfYear = new Date(currentYear, 0, 1);
   const [referenceDate, setReferenceDate] = useState(startOfYear);
 
-  // Actualizar transacción y calcular campos derivados
   function updateTransaction(index, field, value) {
     setTransactions((prev) =>
       prev.map((tran, i) => {
         if (i !== index) return tran;
         const updatedTran = { ...tran, [field]: value };
 
-        // Calcular "Próximo Corte" basado en el día de corte
         if (field === "corte" || field === "fecha") {
           const cutoffDay = parseInt(updatedTran.corte) || 1;
           const tranDate = new Date(updatedTran.fecha || referenceDate);
@@ -644,13 +643,11 @@ function TransactionsTab({ t }) {
           updatedTran.proxCorte = nextCutoff.toISOString().split("T")[0];
         }
 
-        // Calcular "Créditos al Corte" y "Débitos al Corte"
         if (field === "monto" || field === "metodo") {
           updatedTran.creditosAlCorte = updatedTran.metodo === "APAP" ? parseFloat(updatedTran.monto) || 0 : 0;
           updatedTran.debitosAlCorte = updatedTran.metodo !== "APAP" ? parseFloat(updatedTran.monto) || 0 : 0;
         }
 
-        // Calcular "Dif. Plan vs. Act."
         if (field === "monto" || field === "balanceAl") {
           updatedTran.dif = (parseFloat(updatedTran.monto) || 0) - (parseFloat(updatedTran.balanceAl) || 0);
         }
@@ -660,7 +657,6 @@ function TransactionsTab({ t }) {
     );
   }
 
-  // Agregar nueva transacción
   function addTransaction() {
     setTransactions((prev) => [
       ...prev,
@@ -682,7 +678,6 @@ function TransactionsTab({ t }) {
     ]);
   }
 
-  // Eliminar transacción
   function deleteTransaction(index) {
     setTransactions((prev) => prev.filter((_, i) => i !== index));
   }
@@ -938,7 +933,7 @@ function CalendarView({ t }) {
     setSelectedDay(day);
   }
 
-  // Simulación: obtiene detalles del balance para el día (aquí debes integrar tus datos reales)
+  // Simulación: obtiene detalles del balance para el día
   function getBalanceDetails(day) {
     return day % 2 === 0 ? `Detalles del balance para el día ${day}` : "";
   }
