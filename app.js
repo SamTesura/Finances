@@ -17,10 +17,11 @@ const translations = {
     balance: "Balance",
     cumulative: "Cumulative Balance",
     meta: "Set Target",
+    metaSet: "Target balance set for",
+    clearMeta: "Clear Target",
     addTransaction: "Add Transaction",
     addEvent: "Add Event",
     enterMeta: "Enter your target balance and date (YYYY-MM-DD) separated by a comma. Example: 10000,2023-09-15",
-    metaSet: "Target balance set for",
     detailsFor: "Budget details for",
     recurringQuestion: "Is this row recurrent?",
     recurringValue: "Enter the value to be repeated:",
@@ -45,11 +46,12 @@ const translations = {
     addCash: "+ Cash",
     balance: "Balance",
     cumulative: "Balance Acumulado",
-    meta: "Establecer Meta",
     addTransaction: "Añadir Transacción",
     addEvent: "Añadir Evento",
     enterMeta: "Ingrese su balance meta y la fecha (AAAA-MM-DD) separados por coma. Ejemplo: 10000,2023-09-15",
+    meta: "Establecer Meta",
     metaSet: "Balance meta establecido para",
+    clearMeta: "Borrar Meta",
     detailsFor: "Detalles presupuestarios para",
     recurringQuestion: "¿Esta fila es recurrente?",
     recurringValue: "Ingrese el valor que se repetirá:",
@@ -362,7 +364,7 @@ function BalanceTab({ t, lang }) {
   }, [dates, cumulativeRow, balanceMeta, t]);
 
   return (
-    <div>
+     <div>
       <h2>{t.balanceTab}</h2>
       <div className="add-buttons-container">
         <button className="button" onClick={() => addRowToSection(setIngresos)}>{t.addIncome}</button>
@@ -381,8 +383,10 @@ function BalanceTab({ t, lang }) {
             cash,
             balanceMeta: null
           }));
-          Swal.fire("Success", "Meta has been cleared", "success");
-        }}>Clear Meta</button>
+          Swal.fire("Success", t.clearMeta + " successfully cleared", "success");
+        }}>
+          {t.clearMeta}
+        </button>
       </div>
       <div className="table-container" ref={tableRef}>
         <table>
