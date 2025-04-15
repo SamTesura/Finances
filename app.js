@@ -66,42 +66,15 @@ const translations = {
 
 /* Componente NumericInput para gestionar la edición y el formateo en vivo */
 function NumericInput({ value, onChange, placeholder }) {
-  const [editingValue, setEditingValue] = useState(value ? value.toString() : "");
-
-  useEffect(() => {
-    setEditingValue(value ? value.toString() : "");
-  }, [value]);
-
-  function formatNumber(val) {
-    let number = parseFloat(val);
-    if (isNaN(number)) return "";
-    return number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  const handleFocus = () => {
-    // Al hacer focus se muestra el valor sin formateo
-    setEditingValue(value ? value.toString() : "");
-  };
-
-  const handleBlur = () => {
-    const numeric = parseFloat(editingValue);
-    const formatted = isNaN(numeric) ? "" : formatNumber(numeric);
-    setEditingValue(formatted);
-    if (!isNaN(numeric)) onChange(numeric.toString());
-  };
-
-  const handleChange = (e) => {
-    setEditingValue(e.target.value);
-  };
-
   return (
-    <input
-      type="text"
-      value={editingValue}
+    <NumberFormat
+      value={value}
+      thousandSeparator={true}
+      decimalScale={2}
+      fixedDecimalScale={true}
       placeholder={placeholder}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onChange={handleChange}
+      onValueChange={(values) => onChange(values.value)}
+      className="numeric-input"
     />
   );
 }
@@ -288,26 +261,17 @@ function BalanceTab({ t, lang }) {
     const { value: formValues } = await Swal.fire({
       title: t.meta,
       html:
-        `<input id="meta-amount" type="text" class="swal2-input" placeholder="${t.meta} amount" value="${defaultAmount ? formatNumber(defaultAmount) : ''}">` +
+        `<input id="meta-amount" type="number" step="any" inputmode="decimal" class="swal2-input" placeholder="${t.meta} amount" value="${defaultAmount}">` +
         `<input id="meta-date" type="date" class="swal2-input" value="${defaultDateValue}">`,
       focusConfirm: false,
-      willOpen: () => {
-        const metaAmountInput = document.getElementById("meta-amount");
-        metaAmountInput.addEventListener("input", (e) => {
-          let raw = e.target.value.replace(/,/g, '');
-          let num = parseFloat(raw);
-          if (!isNaN(num)) {
-            e.target.value = num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-          }
-        });
-      },
       preConfirm: () => {
         return {
-          amount: document.getElementById("meta-amount").value.replace(/,/g, ""),
+          amount: document.getElementById("meta-amount").value,
           date: document.getElementById("meta-date").value
         };
       }
     });
+    
     if (formValues) {
       const amount = parseFloat(formValues.amount);
       const metaDateRaw = new Date(formValues.date);
