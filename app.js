@@ -30,7 +30,9 @@ const translations = {
     expenseTitle: "Expenses",
     debitTitle: "Debit Account",
     cashTitle: "Cash",
-    incomeTitle: "Income"
+    incomeTitle: "Income",
+    action: "Action",
+    delete: "Delete",
   },
   es: {
     title: "Finance Control App",
@@ -60,7 +62,9 @@ const translations = {
     expenseTitle: "Gastos",
     debitTitle: "Cuenta de Débito",
     cashTitle: "Cash",
-    incomeTitle: "Ingresos"
+    incomeTitle: "Ingresos",
+    action: "Acción",
+    delete: "Eliminar",
   },
 };
 
@@ -81,11 +85,11 @@ function NumericInput({ value, onChange, placeholder }) {
 
 function FinanceApp() {
   const [activeTab, setActiveTab] = useState("balance");
-  const [lang, setLang] = useState("es");
+  const [lang, setLang] = useState("en");
   const t = translations[lang];
 
   function toggleLanguage() {
-    setLang(prev => (prev === "en" ? "es" : "en"));
+    setLang(prev => (prev === "es" ? "en" : "es"));
   }
 
   return (
@@ -315,7 +319,7 @@ function BalanceTab({ t, lang }) {
         datasets.push({
           label: t.meta,
           data: progressiveData,
-          borderColor: "#00c853",
+          borderColor: "#	#00296b",
           borderDash: [5, 5],
           fill: false,
         });
@@ -339,12 +343,12 @@ function BalanceTab({ t, lang }) {
                 mode: "horizontal",
                 scaleID: "y",
                 value: balanceMeta.amount,
-                borderColor: "#00c853",
+                borderColor: "	#00296b",
                 borderWidth: 2,
                 label: {
                   enabled: true,
                   content: `${t.meta}: ${formatNumber(balanceMeta.amount)}`,
-                  backgroundColor: "rgba(0,200,83,0.7)",
+                  backgroundColor: "rgb(255, 255, 255)",
                 },
               },
             } : {}
@@ -385,7 +389,7 @@ function BalanceTab({ t, lang }) {
             <tr>
               <th style={{ minWidth: "180px" }}>Concepto</th>
               {dates.map((d, idx) => <th key={idx}>{d.formatted}</th>)}
-              <th>Acción</th>
+              <th>{t.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -420,7 +424,7 @@ function BalanceTab({ t, lang }) {
                 ))}
                 <td>
                   <button className="button delete-btn" onClick={() => deleteRow(ingresos, setIngresos, rowIndex)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -456,7 +460,7 @@ function BalanceTab({ t, lang }) {
                 ))}
                 <td>
                   <button className="button delete-btn" onClick={() => deleteRow(tarjeta, setTarjeta, rowIndex)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -492,7 +496,7 @@ function BalanceTab({ t, lang }) {
                 ))}
                 <td>
                   <button className="button delete-btn" onClick={() => deleteRow(gastos, setGastos, rowIndex)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -528,7 +532,7 @@ function BalanceTab({ t, lang }) {
                 ))}
                 <td>
                   <button className="button delete-btn" onClick={() => deleteRow(cuenta, setCuenta, rowIndex)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -564,7 +568,7 @@ function BalanceTab({ t, lang }) {
                 ))}
                 <td>
                   <button className="button delete-btn" onClick={() => deleteRow(cash, setCash, rowIndex)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -692,7 +696,7 @@ function TransactionsTab({ t }) {
               <th>Débitos al Corte</th>
               <th>Diferencia Plan vs Actual</th>
               <th>Balance Actual</th>
-              <th>Acción</th>
+              <th>{t.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -783,7 +787,7 @@ function TransactionsTab({ t }) {
                 </td>
                 <td>
                   <button className="button delete-btn" onClick={() => deleteTransaction(index)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
@@ -829,7 +833,7 @@ function EventsTab({ t }) {
               <th>Día</th>
               <th>Eventos</th>
               <th>Presupuesto</th>
-              <th>Acción</th>
+              <th>{t.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -865,7 +869,7 @@ function EventsTab({ t }) {
                 </td>
                 <td>
                   <button className="button delete-btn" onClick={() => deleteEvent(index)}>
-                    Eliminar
+                    {t.delete}
                   </button>
                 </td>
               </tr>
