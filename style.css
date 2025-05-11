@@ -8,7 +8,7 @@
 /* Fuente y colores */
 body {
   font-family: 'Roboto', sans-serif;
-  background-color: #f0f2f5;
+  background-color: #f0e7ff;
   color: #333;
   padding: 20px;
   font-size: 16px;
@@ -26,7 +26,7 @@ body {
 
 /* Header */
 .header {
-  background: linear-gradient(135deg, #4a90e2, #00c853);
+  background: linear-gradient(135deg, 	#cfb4f7, #6982c7);
   color: #fff;
   padding: 28px;
   text-align: center;
@@ -39,7 +39,7 @@ body {
   top: 10px;
   right: 15px;
   background: #fff;
-  color: #4a90e2;
+  color: #9e379f;
   border: none;
   border-radius: 20px;
   padding: 6px 12px;
@@ -73,7 +73,7 @@ body {
 }
 .nav-tab.active {
   background: #ffffff;
-  border-bottom: 4px solid #00c853;
+  border-bottom: 4px solid #cfb4f7;
 }
 
 /* Sección */
@@ -125,7 +125,7 @@ select:focus {
 /* Botones */
 .button {
   padding: 0.75rem 1.5rem;
-  background: #00c853;
+  background: #9e379f;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -135,7 +135,7 @@ select:focus {
   transition: background 0.3s, transform 0.3s;
 }
 .button:hover {
-  background: #009624;
+  background: #8f2991;
   transform: scale(1.02);
 }
 .add-buttons-container {
@@ -177,9 +177,8 @@ table td:first-child {
   margin: 30px 0;
 }
 .chart-container canvas {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   border-radius: 6px;
-  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  background: linear-gradient(189deg, #ffffff, #f2e9fa);
 }
 
 /* Calendario */
@@ -233,11 +232,11 @@ table td:first-child {
 
 /* Botón de eliminación */
 .delete-btn {
-  background: #d32f2f;
+  background: #493267;
   padding: 6px 12px;
 }
 .delete-btn:hover {
-  background: #b71c1c;
+  background: #362749;
 }
 
 /* Ajustes responsivos */
