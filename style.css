@@ -139,7 +139,7 @@ select:focus {
   transform: scale(1.02);
 }
 
-.delete clearmeta {
+.clearmeta {
   padding: 0.75rem 1.5rem;
   background: #493267;
   border: none;
@@ -149,7 +149,7 @@ select:focus {
   font-size: 1rem;
   transition: background 0.3s, transform 0.3s;
 }
-.delete clearmeta:hover {
+.clearmeta:hover {
   background: #362749;
   transform: scale(1.02)
 }
