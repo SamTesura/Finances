@@ -373,7 +373,7 @@ function BalanceTab({ t, lang }) {
         <button className="button" onClick={() => addRowToSection(setCuenta)}>{t.addAccount}</button>
         <button className="button" onClick={() => addRowToSection(setCash)}>{t.addCash}</button>
         <button className="button" onClick={handleSetMeta}>{t.meta}</button>
-        <button className="button delete-btn" onClick={() => {
+        <button className="button clearmeta" onClick={() => {
           setBalanceMeta(null);
           localStorage.setItem("financeData", JSON.stringify({
             ingresos, tarjeta, gastos, cuenta, cash, balanceMeta: null
