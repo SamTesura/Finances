@@ -45,7 +45,7 @@ const translations = {
     addCredit: "+ Tarjeta",
     addExpense: "+ Gasto",
     addAccount: "+ Cuenta Débito",
-    addCash: "+ Cash",
+    addCash: "+ Efectivo",
     balance: "Balance",
     cumulative: "Balance Acumulado",
     meta: "Establecer Meta",
