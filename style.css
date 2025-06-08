@@ -233,6 +233,7 @@ table td:first-child {
 /* Botón de eliminación */
 .delete-btn {
   background: #493267;
+  padding: 6px 12px;
 }
 .delete-btn:hover {
   background: #362749;
