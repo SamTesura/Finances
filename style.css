@@ -52,7 +52,7 @@ a:hover { text-decoration: underline; }
 .gap-2{ gap:4px; }
 .gap-3{ gap:4px; }
 .gap-4{ gap:4px; }
-.grid{ display:grid; margin: 15px 5px 15px 5px;}
+.grid{ display:grid; margin: 15px 0px 15px 5px;}
 .grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .md\:grid-cols-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .xl\:grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -287,3 +287,4 @@ td, th{
 td input, td select{ min-width: 120px; }
 
 /* Rotate X-axis labels is handled in JS via <XAxis tick angle=-45> */
+
