@@ -153,7 +153,6 @@ thead th{
   text-align: left;
   font-weight: 700;
   color: var(--muted);
-  white-space: nowrap;
 }
 tbody tr:hover td{ background: rgba(255,255,255, .03); }
 
@@ -286,6 +285,7 @@ td, th{
 td input, td select{ min-width: 120px; }
 
 /* Rotate X-axis labels is handled in JS via <XAxis tick angle=-45> */
+
 
 
 
