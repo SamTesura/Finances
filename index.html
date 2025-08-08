@@ -1,30 +1,33 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Finance Control App</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
-    <!-- Animate.css para animaciones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <!-- Nuestro CSS -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Finance Control APP</title>
+
     <link rel="stylesheet" href="style.css" />
-    <!-- React y ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-number-format@4.8.0/dist/react-number-format.min.js"></script>
-    <!-- Babel para JSX -->
-    <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <!-- Chart.js y plugin de anotaciones -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
-    <!-- SweetAlert2 para modal elegante -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- React 18 UMD (production) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+    <!-- PropTypes UMD (needed by Recharts v2) -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin></script>
+
+    <!-- Recharts v2 UMD (v3 has no UMD) -->
+    <!-- Use jsDelivr to avoid occasional unpkg hiccups -->
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.10.4/umd/Recharts.min.js" crossorigin></script>
+
+    <!-- XLSX UMD -->
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin></script>
+
+    <!-- Babel (only because you want zero installs) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Nuestro script -->
+
+    <!-- Your app (JSX, no build step) -->
     <script type="text/babel" src="app.js"></script>
   </body>
 </html>
