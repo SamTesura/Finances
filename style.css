@@ -149,7 +149,7 @@ thead th{
   position: sticky; top: 0;
   background: #0e1731;
   z-index: 5;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   text-align: left;
   font-weight: 700;
   color: var(--muted);
@@ -285,6 +285,7 @@ td, th{
 td input, td select{ min-width: 120px; }
 
 /* Rotate X-axis labels is handled in JS via <XAxis tick angle=-45> */
+
 
 
 
