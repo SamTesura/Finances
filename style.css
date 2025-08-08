@@ -12,7 +12,7 @@ body { margin: 25px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ub
   --bg-softer: #243469;
   --card: #0f1a33;
   --card-2: #0f1630;
-  --border: #445f9c;
+  --border: #212d49;
   --muted: #a8b3cf;
   --text: #e6eaf5;
   --brand: #6e8cff;
@@ -159,6 +159,8 @@ tbody tr:hover td{ background: rgba(255,255,255, .03); }
 td, th{
   border-bottom: 1px solid var(--border);
   vertical-align: top;
+  white-space: nowrap;
+  padding: 11.5px;
 }
 
 .sticky-col{
@@ -285,6 +287,7 @@ td, th{
 td input, td select{ min-width: 120px; }
 
 /* Rotate X-axis labels is handled in JS via <XAxis tick angle=-45> */
+
 
 
 
