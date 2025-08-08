@@ -71,7 +71,6 @@ a:hover { text-decoration: underline; }
   border-radius: 14px;
   padding: 15px;
   margin-bottom: 15px;
-  margin-right: 15px;
   box-shadow: var(--shadow);
 }
 
@@ -287,4 +286,5 @@ td, th{
 td input, td select{ min-width: 120px; }
 
 /* Rotate X-axis labels is handled in JS via <XAxis tick angle=-45> */
+
 
