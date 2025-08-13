@@ -1,5 +1,5 @@
 /* global React, ReactDOM, Recharts, XLSX */
-const { useEffect, useMemo, useState } = React;
+const { useEffect, useMemo, useState, useRef } = React;
 const {
   LineChart, Line, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -8,18 +8,20 @@ const {
 /**************************************
  * FINANCE APP — JS (v5)
  * - Formulas unchanged
- * - Dynamic cadence (daily / 3d / 7d / 14d / 15d / monthly)
- * - Reproject rows automatically when cadence/year changes
- * - Calendar click -> “Add item on this date”
- * - Enter commits; Esc closes modals; singleton modals on top
- * - Target drawn as a line only up to the target date
- * - Readable on any screen (density/zoom control)
+ * - Dynamic timeline cadence (daily / 3d / 7d / 14d / 15d / monthly)
+ * - Reproject rows when cadence changes
+ * - Calendar click -> Add item on this date
+ * - Enter submits, Esc closes; modal lock (single modal at a time)
+ * - Target line on chart (only up to target date)
+ * - Weekly summary table at end (always 7d cadence) with negative highlight
+ * - Concept name non-editable after add (Rename button opens modal)
+ * - X-axis labels rotated for readability
  **************************************/
 
 /* ---------- i18n ---------- */
 const messages = {
   en: {
-    appTitle: "Finance Control App",
+    appTitle: "Finance Control",
     appTag: "Plan, track, and visualize cash flow with recurring items and targets.",
     balanceTab: "Balance",
     transactionsTab: "Transactions",
@@ -37,7 +39,7 @@ const messages = {
     cashFlow: "Cash Flow",
     cashFlowDesc: "Balance per column and cumulative total.",
     add: "Add",
-    label: "Rename",
+    label: "Label",
     startDate: "Start date",
     recurrence: "Recurrence",
     oneTime: "One-time",
@@ -103,13 +105,18 @@ const messages = {
     themeSystem: "System",
     help: "Help",
     helpIntroTitle: "How this app works",
-    helpIntroBody: `Add rows to any section. Each row has a start date and recurrence. The timeline columns follow the scale above. We project each item into the correct columns for the current year. The Balance per column is: Income − Credit Card − Expenses + Debit Account + Cash. The Cumulative line is the running total.`,
+    helpIntroBody: `Add rows to any section. Each row has a start date and a recurrence (daily, every 3 days, weekly, etc.). The timeline columns follow the chosen scale above. We project each item into the correct columns for the current year. The Balance formula per column is: Income − Credit Card − Expenses + Debit Account + Cash. The Cumulative line is the running total.`,
     helpSectionsTitle: "Sections",
     helpSectionsBody: `Income: money you receive. Credit Card: statement charges. Expenses: immediate outflows. Debit Account: bank inflows/outflows. Cash: cash on hand.`,
     helpTransactionsTitle: "Transactions tab",
-    helpTransactionsBody: `If method is Credit Card, amount is counted toward “Charges on statement”. Otherwise it’s an immediate debit. “Next statement date” comes from the cycle day.`,
+    helpTransactionsBody: `If method is Credit Card, amount is counted toward “Charges on statement”. Otherwise it’s an immediate debit. “Next statement date” is derived from the cycle day.`,
     helpTargetsTitle: "Targets",
-    helpTargetsBody: `Set a target amount and date; the chart shows your progress until that date.`,
+    helpTargetsBody: `Set a target amount and date; the chart shows your progress.`,
+    rename: "Rename",
+    newName: "New name",
+    weeklySummary: "Weekly summary (always 7-day cadence)",
+    balance: "Balance",
+    cumulative: "Cumulative",
   },
   es: {
     appTitle: "Control Financiero",
@@ -121,7 +128,7 @@ const messages = {
     kpiThisWeek: "Balance de este periodo",
     kpiYtd: "Acumulado del año",
     target: "Meta",
-    targetDesc: "Define una meta y fecha; el gráfico muestra el progreso hasta esa fecha.",
+    targetDesc: "Define una meta y fecha; el gráfico muestra el progreso.",
     setTarget: "Definir meta",
     amount: "Monto",
     date: "Fecha",
@@ -130,7 +137,7 @@ const messages = {
     cashFlow: "Flujo de caja",
     cashFlowDesc: "Balance por columna y total acumulado.",
     add: "Agregar",
-    label: "Renombrar",
+    label: "Etiqueta",
     startDate: "Fecha de inicio",
     recurrence: "Recurrencia",
     oneTime: "Única vez",
@@ -196,13 +203,18 @@ const messages = {
     themeSystem: "Sistema",
     help: "Ayuda",
     helpIntroTitle: "Cómo funciona esta app",
-    helpIntroBody: `Agrega filas a cualquier sección con fecha de inicio y recurrencia. Las columnas del timeline siguen la escala elegida. Proyectamos cada ítem en las columnas correctas del año actual. El Balance por columna usa: Ingresos − Tarjeta − Gastos + Cuenta débito + Efectivo. “Acumulado” es la suma corrida.`,
+    helpIntroBody: `Agrega filas a cualquier sección con fecha de inicio y recurrencia (diaria, cada 3 días, semanal, etc.). Las columnas del timeline siguen la escala elegida arriba. Proyectamos cada ítem en las columnas correctas del año actual. El Balance por columna usa: Ingresos − Tarjeta − Gastos + Cuenta débito + Efectivo. “Acumulado” es la suma corrida.`,
     helpSectionsTitle: "Secciones",
     helpSectionsBody: `Ingresos: dinero que recibes. Tarjeta: cargos al estado. Gastos: salidas inmediatas. Cuenta débito: movimientos bancarios. Efectivo: dinero en mano.`,
     helpTransactionsTitle: "Pestaña Transacciones",
     helpTransactionsBody: `Si el método es Tarjeta, cuenta como “Cargos al estado”. Si no, es débito inmediato. “Próximo estado” viene del día de ciclo.`,
     helpTargetsTitle: "Metas",
-    helpTargetsBody: `Define monto y fecha; el gráfico muestra tu avance hasta esa fecha.`,
+    helpTargetsBody: `Define monto y fecha; el gráfico muestra tu avance.`,
+    rename: "Renombrar",
+    newName: "Nuevo nombre",
+    weeklySummary: "Resumen semanal (siempre 7 días)",
+    balance: "Balance",
+    cumulative: "Acumulado",
   }
 };
 
@@ -258,15 +270,6 @@ const RECURRENCE = [
   { key: "yearly", labelKey: "yearly" },
 ];
 
-const CADENCES = [
-  { key: 'daily', days: 1, labelKey: 'cadence_daily' },
-  { key: '3d', days: 3, labelKey: 'cadence_3d' },
-  { key: '7d', days: 7, labelKey: 'cadence_7d' },
-  { key: '14d', days: 14, labelKey: 'cadence_14d' },
-  { key: '15d', days: 15, labelKey: 'cadence_15d' },
-  { key: '1m', days: null, labelKey: 'cadence_1m' }, // month buckets
-];
-
 const STORAGE_KEY = "finance-app-v2";
 
 function startOfYear(d = new Date()) { return new Date(d.getFullYear(), 0, 1); }
@@ -276,7 +279,7 @@ function addMonths(date, n) { return new Date(date.getFullYear(), date.getMonth(
 function startOfMonth(date){ return new Date(date.getFullYear(), date.getMonth(), 1); }
 function fmt(d) { return `${String(d.getDate()).padStart(2, "0")}-${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]}`; }
 function money(n) { if (n == null || isNaN(n)) return ""; return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function uid(){ return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`; }
+function uid(){ return (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`; }
 
 /* Generate columns for the whole current year based on cadence */
 function genColumns(cadenceKey){
@@ -346,7 +349,6 @@ function projectRowToColumns({ columns, cadenceKey, row }){
   if (!amount || !startDate) return base;
 
   const mapIndex = new Map(columns.map((c, i)=> [c.full.toDateString(), i]));
-
   for (const occ of iterateOccurrences({ startDate, recurrence })){
     const bucketStart = bucketStartFor(occ, cadenceKey);
     const idx = mapIndex.get(bucketStart.toDateString());
@@ -357,26 +359,40 @@ function projectRowToColumns({ columns, cadenceKey, row }){
   return base;
 }
 
+/* Recompute all rows for given columns/cadence */
+function recomputeAll(prev, columns, cadence){
+  const out = {};
+  for (const s of SECTIONS){
+    const list = (prev[s.key]||[]).map(row=>{
+      const projected = projectRowToColumns({ columns, cadenceKey: cadence, row });
+      return { ...row, values: projected };
+    });
+    out[s.key] = list;
+  }
+  return out;
+}
+
+/* ---------- modal lock (single-open) ---------- */
+function modalIsOpen(){ return !!window.__modalOpenFlag; }
+function openModalLock(){ window.__modalOpenFlag = true; document.body.style.overflow = 'hidden'; }
+function closeModalLock(){ window.__modalOpenFlag = false; document.body.style.overflow = ''; }
+
 /* ---------- App ---------- */
 function App() {
   const { locale, setLocale, t } = useLocale();
   const { mode, setMode } = useTheme();
 
-  // NEW: timeline cadence + density (zoom)
   const [cadence, setCadence] = useState(localStorage.getItem('finance-app-cadence') || '7d');
   useEffect(()=> localStorage.setItem('finance-app-cadence', cadence), [cadence]);
 
-  const [density, setDensity] = useState(localStorage.getItem('finance-app-density') || 'cozy');
-  useEffect(()=> localStorage.setItem('finance-app-density', density), [density]);
-
   const columns = useMemo(() => genColumns(cadence), [cadence]);
 
-  // rows keep meta + values; recompute values whenever cadence changes
   const [rows, setRows] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     const init = saved ? JSON.parse(saved) : Object.fromEntries(SECTIONS.map(s => [s.key, []]));
     return recomputeAll(init, columns, cadence);
   });
+
   const [target, setTarget] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY+"/target");
     return saved ? JSON.parse(saved) : null;
@@ -386,38 +402,24 @@ function App() {
   // calendar add modal
   const [calendarAdd, setCalendarAdd] = useState({ open:false, date:null });
 
-  // simple toasts
+  // toasts
   const [toasts, setToasts] = useState([]);
-  function toast(msg){ setToasts(prev=> [...prev, { id: Date.now(), msg }]); setTimeout(()=> setToasts(prev=> prev.slice(1)), 2500); }
+  function toast(msg){ setToasts(prev=> [...prev, { id: Date.now()+Math.random(), msg }]); setTimeout(()=> setToasts(prev=> prev.slice(1)), 2500); }
 
-  // persist rows/target
+  // persist
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }, [rows]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY+"/target", JSON.stringify(target)); }, [target]);
 
-  // recompute all rows when cadence or columns change
-  useEffect(() => { setRows(prev => recomputeAll(prev, columns, cadence)); }, [cadence, columns]);
-
-  // Auto-update on year change (checks daily)
-  useEffect(()=>{
-    let stop = false;
-    function check(){ 
-      if (stop) return;
-      const now = new Date();
-      const yNow = now.getFullYear();
-      const yCols = (columns[0]?.full || new Date()).getFullYear();
-      if (yNow !== yCols){
-        const nextCols = genColumns(cadence);
-        setRows(prev => recomputeAll(prev, nextCols, cadence));
-      }
-    }
-    const id = setInterval(check, 24*60*60*1000);
-    return ()=>{ stop = true; clearInterval(id); };
-  }, [columns, cadence]);
+  // recompute when cadence/columns change
+  useEffect(() => {
+    setRows(prev => recomputeAll(prev, columns, cadence));
+  }, [cadence, columns]);
 
   // formulas unchanged
   function sumSection(sectionKey, col) {
     return (rows[sectionKey]||[]).reduce((acc, r) => acc + (parseFloat(String(r.values[col] ?? 0)) || 0), 0);
   }
+
   const balanceRow = columns.map((_, i) =>
     sumSection("ingresos", i) -
     sumSection("tarjeta", i) -
@@ -427,24 +429,23 @@ function App() {
   );
   let running = 0; const cumulativeRow = balanceRow.map(v => (running += v));
 
-  // Chart data with Target only up to target date
+  // ---- Target line series in chart (only up to target date) ----
   const chartData = useMemo(() => {
-    const tgt = target && Number(target.amount) > 0 ? Number(target.amount) : null;
-    let lastLabel = null;
-    if (target && target.date){
-      const td = new Date(target.date);
-      const bucket = bucketStartFor(td, cadence);
-      const found = columns.find(c => c.full.toDateString() === bucket.toDateString());
-      lastLabel = found ? found.label : null;
-    }
+    const end = target && target.date ? new Date(target.date) : null;
     return columns.map((c, i) => ({
       date: c.label,
-      Balance: Number((balanceRow[i]||0).toFixed(2)),
-      Cumulative: Number((cumulativeRow[i]||0).toFixed(2)),
-      Target: (tgt!=null && (lastLabel==null || c.label <= lastLabel)) ? tgt : null
+      Balance: Number((balanceRow?.[i] ?? 0).toFixed(2)),
+      Cumulative: Number((cumulativeRow?.[i] ?? 0).toFixed(2)),
+      Target: end && Number(target?.amount) > 0 && c.full <= end ? Number(target.amount) : null,
     }));
-  }, [columns, balanceRow, cumulativeRow, target, cadence]);
+  }, [columns, balanceRow, cumulativeRow, target]);
 
+  // safe guards for KPI values and chart data
+  const firstBalance = (Array.isArray(balanceRow) && balanceRow.length) ? balanceRow[0] : 0;
+  const lastCum = (Array.isArray(cumulativeRow) && cumulativeRow.length) ? cumulativeRow[cumulativeRow.length-1] : 0;
+  const safeChartData = Array.isArray(chartData) ? chartData : [];
+
+  // section mutations
   function addRow(sectionKey, payload){
     const id = uid();
     const projected = projectRowToColumns({ columns, cadenceKey: cadence, row: { meta: payload }});
@@ -555,9 +556,7 @@ function App() {
     <div className="container">
       {/* Toasts */}
       <div className="toast-stack">
-        {toasts.map(ti=>(
-          <div key={ti.id} className="toast">{String(ti.msg)}</div>
-        ))}
+        {toasts.map(ti=>(<div key={ti.id} className="toast">{String(ti.msg)}</div>))}
       </div>
 
       <header className="header">
@@ -570,7 +569,6 @@ function App() {
         </div>
         <div className="header-actions">
           <CadenceMenu t={(k)=>messages[locale][k]} cadence={cadence} setCadence={setCadence} />
-          <DensityMenu density={density} setDensity={setDensity} />
           <ImportMenu t={(k)=>messages[locale][k]} onImportExcel={importExcelOrCsv} onImportJSON={importJSON} />
           <ExportMenu t={(k)=>messages[locale][k]} onExportJSON={exportJSON} onExportTx={exportTransactionsToXLSX} onExportSections={exportSectionsToXLSX} />
           <HelpDialog t={(k)=>messages[locale][k]} />
@@ -601,11 +599,12 @@ function App() {
                   updateLabel={updateLabel}
                   updateMeta={updateMeta}
                   removeRow={removeRow}
-                  chartData={chartData}
+                  chartData={safeChartData}
                   balanceRow={balanceRow}
                   cumulativeRow={cumulativeRow}
                   cadence={cadence}
-                  density={density}
+                  firstBalance={firstBalance}
+                  lastCum={lastCum}
                 />
               )}
               {active==='transactions' && (
@@ -616,7 +615,10 @@ function App() {
                 <CalendarCard
                   t={(k)=>messages[locale][k]}
                   rows={rows}
-                  onDayClick={(dateObj)=> setCalendarAdd({ open:true, date: dateObj })}
+                  onDayClick={(dateObj)=> {
+                    if (modalIsOpen()) return;
+                    setCalendarAdd({ open:true, date: dateObj });
+                  }}
                 />
               )}
             </>
@@ -629,7 +631,7 @@ function App() {
         <AddFromCalendarModal
           t={(k)=>messages[locale][k]}
           defaultDate={calendarAdd.date}
-          onCancel={()=> setCalendarAdd({ open:false, date:null })}
+          onCancel={()=> { setCalendarAdd({ open:false, date:null }); }}
           onSave={(sectionKey, payload)=>{
             addRow(sectionKey, payload);
             setCalendarAdd({ open:false, date:null });
@@ -641,31 +643,14 @@ function App() {
   );
 }
 
-/* ---------- Helpers ---------- */
-function recomputeAll(prev, columns, cadence){
-  const out = {};
-  for (const s of SECTIONS){
-    const list = (prev[s.key]||[]).map(row=>{
-      const projected = projectRowToColumns({ columns, cadenceKey: cadence, row });
-      return { ...row, values: projected };
-    });
-    out[s.key] = list;
-  }
-  return out;
-}
-
-/* ---------- UI pieces ---------- */
+/* ---------- UI basics ---------- */
 function Tabs({ tabs, render }){
   const [active, setActive] = useState(tabs[0]?.key || '');
   return (
     <div className="w-full">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div className="tabs-grid">
         {tabs.map(tb=>(
-          <button
-            key={tb.key}
-            onClick={()=> setActive(tb.key)}
-            className={`btn ${active===tb.key ? 'btn-primary' : ''}`}
-          >
+          <button key={tb.key} onClick={()=> setActive(tb.key)} className={`btn ${active===tb.key ? 'btn-primary' : ''}`}>
             {tb.label}
           </button>
         ))}
@@ -691,66 +676,62 @@ function CadenceMenu({ t, cadence, setCadence }){
   );
 }
 
-function DensityMenu({ density, setDensity }){
-  return (
-    <div className="flex items-center gap-6 density-menu">
-      <label className="text-sm opacity-80">Zoom</label>
-      <div className="seg">
-        <button className={`seg-btn ${density==='compact'?'active':''}`} onClick={()=>setDensity('compact')}>Compact</button>
-        <button className={`seg-btn ${density==='cozy'?'active':''}`} onClick={()=>setDensity('cozy')}>Cozy</button>
-        <button className={`seg-btn ${density==='comfy'?'active':''}`} onClick={()=>setDensity('comfy')}>Comfy</button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Balance Tab ---------- */
-function BalanceTab({ t, columns, target, setTarget, rows, addRow, updateCell, updateLabel, updateMeta, removeRow, chartData, balanceRow, cumulativeRow, cadence, density }){
+/* ---------- Balance Tab (with clamp + target line + weekly summary) ---------- */
+function BalanceTab({
+  t, columns, target, setTarget, rows,
+  addRow, updateCell, updateLabel, updateMeta, removeRow,
+  chartData, balanceRow, cumulativeRow, cadence,
+  firstBalance, lastCum
+}){
   return (
     <>
-      <div className="grid md:grid-cols-3 gap-4">
-        <TargetCard t={t} target={target} setTarget={setTarget} />
-        <KpiCard title={t('kpiThisWeek')} value={money(balanceRow[0] ?? 0)} />
-        <KpiCard title={t('kpiYtd')} value={money(cumulativeRow[cumulativeRow.length-1]||0)} />
+      {/* Clamped summary area */}
+      <div className="pre-sections">
+        <div className="summary-grid">
+          <TargetCard t={t} target={target} setTarget={setTarget} />
+          <KpiCard title={t('kpiThisWeek')} value={money(firstBalance)} />
+          <KpiCard title={t('kpiYtd')} value={money(lastCum)} />
+        </div>
+
+        <div className="card p-4 chart-card">
+          <div className="mb-2">
+            <div className="text-lg font-semibold">📈 {t('cashFlow')}</div>
+            <div className="opacity-80 text-sm">{t('cashFlowDesc')}</div>
+          </div>
+          <div style={{height:'100%'}}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 15 }}>
+                <defs>
+                  <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="currentColor" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12, angle: -45, textAnchor: 'end' }}
+                  height={54}
+                  margin={{ top: 15, right: 15, left: 15, bottom: 15 }}
+                  interval={Math.max(0, Math.floor(columns.length/24))}
+                />
+                <YAxis tickFormatter={(v)=>money(v)} tick={{ fontSize: 12 }} width={80} />
+                <Tooltip formatter={(v)=>money(Number(v))} contentStyle={{ background: "#0b1020", border:"1px solid #1f2b4d"}}/>
+                <Legend />
+                <Area type="monotone" dataKey="Cumulative" strokeWidth={2} stroke="#7dd3fc" fill="url(#grad1)" />
+                <Line type="monotone" dataKey="Balance" strokeWidth={2} stroke="#a78bfa" dot={false} />
+                {/* Target series (only up to date) */}
+                {target && Number(target.amount)>0 && (
+                  <Line type="monotone" dataKey="Target" stroke="#f59e0b" strokeDasharray="6 3" dot={false} isAnimationActive={false}/>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
-      <div className="card p-4">
-        <div className="mb-2">
-          <div className="text-lg font-semibold">📈 {t('cashFlow')}</div>
-          <div className="opacity-80 text-sm">{t('cashFlowDesc')}</div>
-        </div>
-        <div style={{height:'320px'}}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="currentColor" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="currentColor" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" />
-              {/* Angled date labels so they’re readable on any screen */}
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12, angle: -45, textAnchor: 'end' }}
-                height={50}
-                interval={Math.max(0, Math.floor(columns.length/24))}
-              />
-              <YAxis tickFormatter={(v)=>money(v)} tick={{ fontSize: 12 }} width={80} />
-              <Tooltip formatter={(v)=>money(Number(v))} contentStyle={{ background: "#0b1020", border:"1px solid #1f2b4d"}}/>
-              <Legend />
-              <Area type="monotone" dataKey="Cumulative" strokeWidth={2} stroke="#7dd3fc" fill="url(#grad1)" />
-              {/* Target series only up to target date */}
-              {target && Number(target.amount)>0 && (
-                <Line type="monotone" dataKey="Target" stroke="#f59e0b" strokeDasharray="6 3" dot={false} isAnimationActive={false}/>
-              )}
-              <Line type="monotone" dataKey="Balance" strokeWidth={2} stroke="#a78bfa" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="grid xl:grid-cols-2 gap-6">
+      {/* Sections */}
+      <div className="sections-grid">
         {SECTIONS.map(s => (
           <SectionTable
             key={s.key}
@@ -766,10 +747,12 @@ function BalanceTab({ t, columns, target, setTarget, rows, addRow, updateCell, u
             updateMeta={updateMeta}
             removeRow={removeRow}
             cadence={cadence}
-            density={density}
           />
         ))}
       </div>
+
+      {/* Weekly summary table (ALWAYS 7d cadence) */}
+      <WeeklySummary t={t} rows={rows} />
     </>
   );
 }
@@ -796,14 +779,11 @@ function TargetCard({ t, target, setTarget }){
           <div className="text-lg font-semibold">🎯 {t('target')}</div>
           <div className="opacity-80 text-sm">{t('targetDesc')}</div>
         </div>
-        <button className="btn btn-primary" onClick={()=>{
-          if (window.__closeModal) window.__closeModal();
-          setOpen(true);
-        }}>
+        <button className="btn btn-primary" onClick={()=> { if (!modalIsOpen()) setOpen(true); }}>
           {t('setTarget')}
         </button>
       </div>
-      <button className="btn btn-primary" onClick={()=> setTarget(null)}>{t('clear')}</button>
+      <button className="btn btn-ghost" onClick={()=> setTarget(null)}>{t('clear')}</button>
       {target && <p className="text-sm opacity-80 mt-2">{t('target')}: <span className="font-semibold">{money(target.amount)}</span> — {new Date(target.date).toDateString()}</p>}
       {open && (
         <Modal onClose={()=> setOpen(false)} title={t('setTarget')}>
@@ -829,11 +809,14 @@ function TargetCard({ t, target, setTarget }){
   );
 }
 
-function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updateCell, updateLabel, updateMeta, removeRow, density }){
+/* ---------- Section table (concept non-editable + Rename) ---------- */
+function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updateCell, updateLabel, updateMeta, removeRow }){
   const data = rows[sectionKey] || [];
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ label: "", amount: "", startDate: new Date().toISOString().slice(0,10), recurrence: "none" });
-  const [renamingId, setRenamingId] = useState(null);
+
+  const [renameRow, setRenameRow] = useState(null);
+  const [renameText, setRenameText] = useState("");
 
   function onCellKeyDown(e){ if (e.key === 'Enter'){ e.preventDefault(); e.currentTarget.blur(); } }
 
@@ -844,71 +827,54 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
           <div className="text-xl">{icon}</div>
           <div className="text-lg font-semibold">{label}</div>
         </div>
-        <button className="btn btn-primary" onClick={()=>{
-          if (window.__closeModal) window.__closeModal();
-          setOpen(true);
-        }}>
+        <button className="btn btn-primary" onClick={()=> { if (!modalIsOpen()) setOpen(true); }}>
           + {t('add')}
         </button>
       </div>
 
-      <div className={`table-wrap ${density} p-2`}>
-        <div className="min-w-[760px]">
-          <table className={`text-sm ${density}`}>
+      <div className="table-wrap p-2">
+        <div style={{ minWidth:'760px' }}>
+          <table className="text-sm">
             <thead>
               <tr>
                 <th className="sticky-col">{t('concept')}</th>
-                {columns.map((c, i) => (<th key={i} title={c.full.toDateString()}>{c.label}</th>))}
-                <th className="actions-cell">{t('actions')}</th>
+                {columns.map((c, i) => (<th key={i}>{c.label}</th>))}
+                <th>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
               {data.length>0 && (<tr><td colSpan={columns.length+2} style={{height:'.5rem'}} /></tr>)}
-              {data.map(row => {
-                const isRenaming = renamingId === row.id;
-                return (
-                  <tr key={row.id}>
-                    <td className="sticky-col">
-                      <div className="concept-wrap">
-                        <input
-                          value={row.label}
-                          readOnly={!isRenaming}
-                          onChange={e=>updateLabel(sectionKey, row.id, e.target.value)}
-                          onKeyDown={onCellKeyDown}
-                          className={isRenaming ? '' : 'read-only'}
-                          title={row.label}
-                        />
-                        {!isRenaming ? (
-                          <button className="btn btn-ghost btn-xs" onClick={()=> setRenamingId(row.id)}>✏️ {t('label')}</button>
-                        ) : (
-                          <button className="btn btn-primary btn-xs" onClick={()=> setRenamingId(null)}>{t('save')}</button>
-                        )}
-                      </div>
+              {data.map(row => (
+                <tr key={row.id}>
+                  <td className="sticky-col">
+                    <div className="concept-lock">
+                      <span className="concept-text" title={row.label || ''}>{row.label || ''}</span>
+                      <button className="btn btn-xs" onClick={()=>{ if (modalIsOpen()) return; setRenameRow(row); setRenameText(row.label||''); }}>
+                        ✏️ {t('rename')}
+                      </button>
+                    </div>
+                  </td>
+                  {columns.map((c, i) => (
+                    <td key={i}>
+                      <input
+                        type="number"
+                        value={row.values[i] ?? ""}
+                        onChange={e=> updateCell(sectionKey, row.id, i, e.target.value === "" ? null : Number(e.target.value))}
+                        onKeyDown={onCellKeyDown}
+                      />
                     </td>
-
-                    {columns.map((c, i) => (
-                      <td key={i}>
-                        <input
-                          type="number"
-                          value={row.values[i] ?? ""}
-                          onChange={e=> updateCell(sectionKey, row.id, i, e.target.value === "" ? null : Number(e.target.value))}
-                          onKeyDown={onCellKeyDown}
-                          className="num"
-                        />
-                      </td>
-                    ))}
-
-                    <td className="actions-cell">
-                      <button className="btn btn-danger" onClick={()=>removeRow(sectionKey, row.id)}>🗑️</button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  ))}
+                  <td>
+                    <button className="btn btn-danger" onClick={()=>removeRow(sectionKey, row.id)}>🗑️</button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Add item modal */}
       {open && (
         <Modal onClose={()=> setOpen(false)} title={`${t('add')} ${label}`}>
           <form
@@ -925,14 +891,14 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
           >
             <div className="grid gap-3">
               <div className="grid gap-2">
-                <label className="text-sm">Concept</label>
+                <label className="text-sm">{t('label')}</label>
                 <input autoFocus value={form.label} onChange={e=>setForm(f=>({ ...f, label: e.target.value }))} placeholder="e.g., Rent, Salary, Groceries" />
               </div>
               <div className="grid gap-2">
                 <label className="text-sm">{t('amount')}</label>
                 <input type="number" step="any" value={form.amount} onChange={e=>setForm(f=>({ ...f, amount: e.target.value }))} placeholder="1250.00" />
               </div>
-              <div className="grid md:grid-cols-2 gap-3">
+              <div className="grid md-grid-2 gap-3">
                 <div className="grid gap-2">
                   <label className="text-sm">{t('startDate')}</label>
                   <input type="date" value={form.startDate} onChange={e=>setForm(f=>({ ...f, startDate: e.target.value }))} />
@@ -952,6 +918,79 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
           </form>
         </Modal>
       )}
+
+      {/* Rename modal */}
+      {renameRow && (
+        <Modal onClose={()=> setRenameRow(null)} title={t('rename')}>
+          <form onSubmit={(e)=>{ e.preventDefault(); updateLabel(sectionKey, renameRow.id, renameText); setRenameRow(null); }}>
+            <div className="grid gap-2">
+              <label className="text-sm">{t('newName')}</label>
+              <input autoFocus value={renameText} onChange={e=> setRenameText(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2 mt-3">
+              <button type="button" className="btn" onClick={()=> setRenameRow(null)}>{t('clear')}</button>
+              <button type="submit" className="btn btn-primary">{t('save')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Weekly Summary (always 7d cadence) ---------- */
+function WeeklySummary({ t, rows }){
+  // compute weekly columns independently of current cadence
+  const weeklyColumns = useMemo(()=> genColumns('7d'), []);
+  const projectedBySection = useMemo(()=>{
+    const out = {};
+    for (const s of SECTIONS){
+      out[s.key] = (rows[s.key]||[]).map(r=>{
+        const values = projectRowToColumns({ columns: weeklyColumns, cadenceKey:'7d', row:r });
+        return { ...r, values };
+      });
+    }
+    return out;
+  }, [rows, weeklyColumns]);
+
+  function sumSection(sectionKey, i){
+    return (projectedBySection[sectionKey] || []).reduce((acc, r)=> acc + (parseFloat(String(r.values[i] ?? 0)) || 0), 0);
+  }
+
+  const balanceRow = weeklyColumns.map((_, i) =>
+    sumSection("ingresos", i) -
+    sumSection("tarjeta", i) -
+    sumSection("gastos", i) +
+    sumSection("cuenta", i) +
+    sumSection("cash", i)
+  );
+  let running = 0; const cumulativeRow = balanceRow.map(v => (running += v));
+
+  return (
+    <div className="card p-4 mt-4">
+      <div className="text-lg font-semibold mb-2">🧮 {t('weeklySummary')}</div>
+      <div className="table-wrap">
+        <div style={{ minWidth:'760px' }}>
+          <table className="text-sm">
+            <thead>
+              <tr>
+                <th style={{position:'sticky', left:0, background:'var(--panel)', zIndex:1}}>&nbsp;</th>
+                {weeklyColumns.map((c,i)=> <th key={i}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{position:'sticky', left:0, background:'var(--panel)', fontWeight:600}}>{t('balance')}</td>
+                {balanceRow.map((v,i)=> <td key={i} className={v<0?'neg':''}>{money(v)}</td>)}
+              </tr>
+              <tr>
+                <td style={{position:'sticky', left:0, background:'var(--panel)', fontWeight:600}}>{t('cumulative')}</td>
+                {cumulativeRow.map((v,i)=> <td key={i} className={v<0?'neg':''}>{money(v)}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -975,7 +1014,8 @@ function TransactionsCard({ t, transactions, setTransactions }){
     if (nextCutoff <= tranDate) nextCutoff.setMonth(nextCutoff.getMonth() + 1);
     r.proxCorte = nextCutoff.toISOString().split("T")[0];
 
-    const isCreditCard = ["Credit Card","Tarjeta de crédito"].includes(r.metodo);
+    const isCreditCard =
+      r.metodo === "Credit Card" || r.metodo === "Tarjeta de crédito";
     r.creditosAlCorte = isCreditCard ? parseFloat(r.monto) || 0 : 0;
     r.debitosAlCorte = !isCreditCard ? parseFloat(r.monto) || 0 : 0;
 
@@ -996,7 +1036,7 @@ function TransactionsCard({ t, transactions, setTransactions }){
       </div>
 
       <div className="table-wrap p-2">
-        <div className="min-w-[1080px]">
+        <div style={{ minWidth:'1080px' }}>
           <table className="text-sm">
             <thead>
               <tr>
@@ -1009,7 +1049,7 @@ function TransactionsCard({ t, transactions, setTransactions }){
                   <td><input type="date" value={r.fecha} onChange={e=>up(i,'fecha', e.target.value)} onKeyDown={onCellKeyDown}/></td>
                   <td><input value={r.semana} onChange={e=>up(i,'semana', e.target.value)} placeholder="1-52" onKeyDown={onCellKeyDown}/></td>
                   <td><input value={r.concepto} onChange={e=>up(i,'concepto', e.target.value)} placeholder="Description" onKeyDown={onCellKeyDown}/></td>
-                  <td><input type="number" value={r.monto} onChange={e=>up(i,'monto', e.target.value)} placeholder="1250.00" onKeyDown={onCellKeyDown} className="num"/></td>
+                  <td><input type="number" value={r.monto} onChange={e=>up(i,'monto', e.target.value)} placeholder="1250.00" onKeyDown={onCellKeyDown}/></td>
                   <td>
                     <select value={r.metodo} onChange={(e)=>up(i,'metodo', e.target.value)}>
                       <option value="">{t('tMetodo')}</option>
@@ -1026,14 +1066,14 @@ function TransactionsCard({ t, transactions, setTransactions }){
                     </select>
                   </td>
                   <td><input value={r.cuentas} onChange={e=>up(i,'cuentas', e.target.value)} placeholder="Account / Category" onKeyDown={onCellKeyDown}/></td>
-                  <td><input type="number" value={r.diaplazo} onChange={e=>up(i,'diaplazo', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown} className="num"/></td>
-                  <td><input type="number" value={r.diacorta} onChange={e=>up(i,'diacorta', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown} className="num"/></td>
-                  <td><input type="number" value={r.corte} onChange={e=>up(i,'corte', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown} className="num"/></td>
+                  <td><input type="number" value={r.diaplazo} onChange={e=>up(i,'diaplazo', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown}/></td>
+                  <td><input type="number" value={r.diacorta} onChange={e=>up(i,'diacorta', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown}/></td>
+                  <td><input type="number" value={r.corte} onChange={e=>up(i,'corte', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown}/></td>
                   <td><input value={r.proxCorte} readOnly /></td>
-                  <td><input type="number" value={r.creditosAlCorte} readOnly className="num"/></td>
-                  <td><input type="number" value={r.debitosAlCorte} readOnly className="num"/></td>
-                  <td><input type="number" value={r.dif} readOnly className="num"/></td>
-                  <td><input type="number" value={r.balanceAl} onChange={e=>up(i,'balanceAl', e.target.value)} onKeyDown={onCellKeyDown} className="num"/></td>
+                  <td><input type="number" value={r.creditosAlCorte} readOnly /></td>
+                  <td><input type="number" value={r.debitosAlCorte} readOnly /></td>
+                  <td><input type="number" value={r.dif} readOnly /></td>
+                  <td><input type="number" value={r.balanceAl} onChange={e=>up(i,'balanceAl', e.target.value)} onKeyDown={onCellKeyDown}/></td>
                   <td><button className="btn btn-danger" onClick={()=>del(i)}>🗑️</button></td>
                 </tr>
               ))}
@@ -1063,7 +1103,7 @@ function EventsCard({ t }){
         <button className="btn btn-primary" onClick={add}>+ {t('add')}</button>
       </div>
       <div className="table-wrap p-2">
-        <div className="min-w-[720px]">
+        <div style={{ minWidth:'720px' }}>
           <table className="text-sm">
             <thead>
               <tr>
@@ -1073,10 +1113,10 @@ function EventsCard({ t }){
             <tbody>
               {rows.map((r,i)=> (
                 <tr key={i}>
-                  <td><input type="number" value={r.mes} onChange={e=>up(i,'mes', e.target.value)} placeholder="1-12" onKeyDown={onCellKeyDown} className="num"/></td>
-                  <td><input type="number" value={r.dia} onChange={e=>up(i,'dia', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown} className="num"/></td>
+                  <td><input type="number" value={r.mes} onChange={e=>up(i,'mes', e.target.value)} placeholder="1-12" onKeyDown={onCellKeyDown}/></td>
+                  <td><input type="number" value={r.dia} onChange={e=>up(i,'dia', e.target.value)} placeholder="1-31" onKeyDown={onCellKeyDown}/></td>
                   <td><input value={r.evento} onChange={e=>up(i,'evento', e.target.value)} placeholder="Event" onKeyDown={onCellKeyDown}/></td>
-                  <td><input type="number" value={r.presupuesto} onChange={e=>up(i,'presupuesto', e.target.value)} placeholder="1250.00" onKeyDown={onCellKeyDown} className="num"/></td>
+                  <td><input type="number" value={r.presupuesto} onChange={e=>up(i,'presupuesto', e.target.value)} placeholder="1250.00" onKeyDown={onCellKeyDown}/></td>
                   <td><button className="btn btn-danger" onClick={()=>del(i)}>🗑️</button></td>
                 </tr>
               ))}
@@ -1157,7 +1197,11 @@ function CalendarCard({ t, rows, onDayClick }){
             return (
               <div
                 key={i}
-                className={["calendar-day", isEmpty ? "calendar-day--empty" : "", d===selected ? "calendar-day--selected" : ""].join(' ')}
+                className={[
+                  "calendar-day",
+                  isEmpty ? "calendar-day--empty" : "",
+                  d===selected ? "calendar-day--selected" : ""
+                ].join(' ')}
                 onClick={()=>{
                   if (isEmpty) return;
                   setSelected(d);
@@ -1201,48 +1245,44 @@ function AddFromCalendarModal({ t, defaultDate, onCancel, onSave }){
   }, []);
 
   return (
-    <div className="modal">
-      <div className="modal-overlay" onClick={onCancel}></div>
-      <div className="modal-card card p-4" role="dialog" aria-modal="true" aria-labelledby="afc-title">
-        <div id="afc-title" className="text-lg font-semibold mb-3">📌 {t('addOnThisDate')}</div>
-        <form onSubmit={(e)=>{ e.preventDefault();
-          const payload = { label, amount: parseFloat(String(amount)), startDate, recurrence };
-          onSave(sectionKey, payload);
-        }}>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <label className="text-sm">{t('section')}</label>
-              <select value={sectionKey} onChange={(e)=> setSectionKey(e.target.value)}>
-                {SECTIONS.map(s=> <option key={s.key} value={s.key}>{s.icon} {t(s.labelKey)}</option>)}
-              </select>
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm">Concept</label>
-              <input id="afc-label" value={label} onChange={e=> setLabel(e.target.value)} placeholder="e.g., Rent, Salary, Groceries" />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm">{t('amount')}</label>
-              <input type="number" step="any" value={amount} onChange={e=> setAmount(e.target.value)} placeholder="1250.00" />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm">{t('startDate')}</label>
-              <input type="date" value={startDate} onChange={e=> setStartDate(e.target.value)} />
-            </div>
-            <div className="grid gap-2 md:col-span-2">
-              <label className="text-sm">{t('recurrence')}</label>
-              <select value={recurrence} onChange={(e)=> setRecurrence(e.target.value)}>
-                {RECURRENCE.map(r=> <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
-              </select>
-            </div>
+    <Modal onClose={onCancel} title={"📌 " + t('addOnThisDate')}>
+      <form onSubmit={(e)=>{ e.preventDefault();
+        const payload = { label, amount: parseFloat(String(amount)), startDate, recurrence };
+        onSave(sectionKey, payload);
+      }}>
+        <div className="grid md-grid-2 gap-3">
+          <div className="grid gap-2">
+            <label className="text-sm">{t('section')}</label>
+            <select value={sectionKey} onChange={(e)=> setSectionKey(e.target.value)}>
+              {SECTIONS.map(s=> <option key={s.key} value={s.key}>{s.icon} {t(s.labelKey)}</option>)}
+            </select>
           </div>
+          <div className="grid gap-2">
+            <label className="text-sm">{t('label')}</label>
+            <input id="afc-label" value={label} onChange={e=> setLabel(e.target.value)} placeholder="e.g., Rent, Salary, Groceries" />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm">{t('amount')}</label>
+            <input type="number" step="any" value={amount} onChange={e=> setAmount(e.target.value)} placeholder="1250.00" />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm">{t('startDate')}</label>
+            <input type="date" value={startDate} onChange={e=> setStartDate(e.target.value)} />
+          </div>
+          <div className="grid gap-2 md-col-span-2">
+            <label className="text-sm">{t('recurrence')}</label>
+            <select value={recurrence} onChange={(e)=> setRecurrence(e.target.value)}>
+              {RECURRENCE.map(r=> <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
+            </select>
+          </div>
+        </div>
 
-          <div className="flex justify-end gap-2 mt-4">
-            <button type="button" className="btn" onClick={onCancel}>{t('clear')}</button>
-            <button type="submit" className="btn btn-primary">{t('save')}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button type="button" className="btn" onClick={onCancel}>{t('clear')}</button>
+          <button type="submit" className="btn btn-primary">{t('save')}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -1256,17 +1296,16 @@ function ImportMenu({ t, onImportExcel, onImportJSON }){
         id={excelInputId}
         type="file"
         accept=".xlsx,.xls,.csv"
-        style={{ display: 'none' }}
-        onChange={(e)=>{ const f = e.target.files && e.target.files[0]; if (f) onImportExcel(f); e.target.value=''; }}
+        style={{display:'none'}}
+        onChange={(e)=>{ const f = e.target.files?.[0]; if (f) onImportExcel(f); e.target.value=''; }}
       />
       <input
         id={jsonInputId}
         type="file"
         accept=".json"
-        style={{ display: 'none' }}
-        onChange={(e)=>{ const f = e.target.files && e.target.files[0]; if (f) onImportJSON(f); e.target.value=''; }}
+        style={{display:'none'}}
+        onChange={(e)=>{ const f = e.target.files?.[0]; if (f) onImportJSON(f); e.target.value=''; }}
       />
-
       <button className="btn" onClick={()=> document.getElementById(excelInputId).click()}>
         {t('importData')} (.xls/.csv)
       </button>
@@ -1282,7 +1321,7 @@ function ExportMenu({ t, onExportJSON, onExportTx, onExportSections }){
     <div className="flex items-center gap-2">
       <button className="btn" onClick={onExportJSON}>{t('exportJSON')}</button>
       <button className="btn" onClick={onExportTx}>{t('exportData')} TX</button>
-      <button className="btn" onClick={onExportSections}>{t('exportData')} CSV</button>
+      <button className="btn" onClick={onExportSections}>{t('exportData')} Tables</button>
     </div>
   );
 }
@@ -1290,21 +1329,9 @@ function ExportMenu({ t, onExportJSON, onExportTx, onExportSections }){
 function ThemeMenu({ t, mode, setMode }){
   return (
     <div className="flex items-center gap-1">
-      <button
-        className={`btn ${mode==='light' ? 'btn-primary' : ''}`}
-        title={t('themeLight')}
-        onClick={()=> setMode('light')}
-      >☀️ {t('themeLight')}</button>
-      <button
-        className={`btn ${mode==='dark' ? 'btn-primary' : ''}`}
-        title={t('themeDark')}
-        onClick={()=> setMode('dark')}
-      >🌙 {t('themeDark')}</button>
-      <button
-        className={`btn ${mode==='system' ? 'btn-primary' : ''}`}
-        title={t('themeSystem')}
-        onClick={()=> setMode('system')}
-      >🖥️ {t('themeSystem')}</button>
+      <button className={`btn ${mode==='light' ? 'btn-primary':''}`} onClick={()=> setMode('light')} title={t('themeLight')}>☀️ {t('themeLight')}</button>
+      <button className={`btn ${mode==='dark' ? 'btn-primary':''}`} onClick={()=> setMode('dark')} title={t('themeDark')}>🌙 {t('themeDark')}</button>
+      <button className={`btn ${mode==='system' ? 'btn-primary':''}`} onClick={()=> setMode('system')} title={t('themeSystem')}>🖥️ {t('themeSystem')}</button>
     </div>
   );
 }
@@ -1313,22 +1340,19 @@ function HelpDialog({ t }){
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className="btn" onClick={()=>{
-        if (window.__closeModal) window.__closeModal();
-        setOpen(true);
-      }}>❓ {t('help')}</button>
+      <button className="btn" onClick={()=> { if (!modalIsOpen()) setOpen(true); }}>❔ {t('help')}</button>
       {open && (
-        <Modal title={t('helpIntroTitle')} onClose={()=> setOpen(false)}>
-          <div className="space-y-3 text-sm">
+        <Modal onClose={()=> setOpen(false)} title={t('helpIntroTitle')}>
+          <div className="space-y-4 text-sm opacity-90">
             <p>{t('helpIntroBody')}</p>
-            <h4 className="text-md font-semibold">{t('helpSectionsTitle')}</h4>
+            <h4 className="font-semibold">{t('helpSectionsTitle')}</h4>
             <p>{t('helpSectionsBody')}</p>
-            <h4 className="text-md font-semibold">{t('helpTransactionsTitle')}</h4>
+            <h4 className="font-semibold">{t('helpTransactionsTitle')}</h4>
             <p>{t('helpTransactionsBody')}</p>
-            <h4 className="text-md font-semibold">{t('helpTargetsTitle')}</h4>
+            <h4 className="font-semibold">{t('helpTargetsTitle')}</h4>
             <p>{t('helpTargetsBody')}</p>
           </div>
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end mt-3">
             <button className="btn btn-primary" onClick={()=> setOpen(false)}>OK</button>
           </div>
         </Modal>
@@ -1337,48 +1361,27 @@ function HelpDialog({ t }){
   );
 }
 
-/* ---------- Generic Modal (singleton + portal) ---------- */
-function Modal({ title, children, onClose }){
-  const [mounted, setMounted] = useState(false);
+/* ---------- Modal (single, top-most) ---------- */
+function Modal({ title, onClose, children }){
+  const escRef = useRef(null);
 
   useEffect(()=>{
-    // Close any existing modal
-    if (window.__closeModal && window.__closeModal !== onClose) window.__closeModal();
-    window.__closeModal = onClose;
-    window.__modalOpen = true;
-    document.body.classList.add('modal-open');
-    setMounted(true);
-
-    function onKey(e){ if (e.key==='Escape') onClose && onClose(); }
-    document.addEventListener('keydown', onKey);
-
-    return ()=>{
-      if (window.__closeModal === onClose) {
-        window.__closeModal = null;
-        window.__modalOpen = false;
-      }
-      document.body.classList.remove('modal-open');
-      document.removeEventListener('keydown', onKey);
-    };
+    openModalLock();
+    const onKey = (e)=>{ if (e.key==='Escape'){ e.preventDefault(); onClose && onClose(); } };
+    window.addEventListener('keydown', onKey);
+    return ()=> { window.removeEventListener('keydown', onKey); closeModalLock(); };
   }, [onClose]);
 
-  if (!mounted) return null;
-
-  return ReactDOM.createPortal(
-    <div className="modal">
-      <div className="modal-overlay" onClick={onClose} />
-      <div className="modal-card card p-4" role="dialog" aria-modal="true">
-        {title && <div className="text-lg font-semibold mb-3">{title}</div>}
-        <div onClick={(e)=> e.stopPropagation()}>
-          {children}
-        </div>
+  return (
+    <div className="modal" style={{ zIndex: 9999 }}>
+      <div className="modal-overlay" onClick={onClose}></div>
+      <div className="modal-card card p-4" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div id="modal-title" className="text-lg font-semibold mb-3">{title}</div>
+        {children}
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }
 
-/* ---------- Mount app ---------- */
-const rootEl = document.getElementById('root');
-const root = ReactDOM.createRoot(rootEl);
-root.render(<App />);
+/* ---------- Mount ---------- */
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
