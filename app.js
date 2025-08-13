@@ -33,7 +33,7 @@ const messages = {
     targetDesc: "Set a target balance and date; chart shows progression up to that date.",
     setTarget: "Set Target",
     amount: "Amount",
-    date: "Date",
+    date: "Start date",
     save: "Save",
     clear: "Clear",
     cashFlow: "Cash Flow",
@@ -131,7 +131,7 @@ const messages = {
     targetDesc: "Define una meta y fecha; el gráfico muestra el progreso.",
     setTarget: "Definir meta",
     amount: "Monto",
-    date: "Fecha",
+    date: "Fecha de inicio",
     save: "Guardar",
     clear: "Limpiar",
     cashFlow: "Flujo de caja",
@@ -1591,3 +1591,4 @@ function Modal({ title, onClose, children }){
 
 /* ---------- Mount ---------- */
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
