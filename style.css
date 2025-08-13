@@ -226,3 +226,47 @@ thead th.date-col{ font-size: 13px; padding: 10px 10px; }
   .header-actions{ width:100%; gap:6px; }
   .header-actions .btn{ flex:1 1 auto; }
 }
+
+/* ===== Brighter, larger calendar icon for <input type="date"> ===== */
+
+/* A crisp SVG we’ll use as an overlay icon (data URI so no extra file) */
+:root{
+  --cal-svg: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e5e7eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>\
+<rect x='3' y='4.5' width='18' height='16' rx='2.5' />\
+<path d='M3 9h18' />\
+<path d='M8 3v4M16 3v4' />\
+<circle cx='8' cy='13' r='1'/><circle cx='12' cy='13' r='1'/><circle cx='16' cy='13' r='1'/>\
+<circle cx='8' cy='17' r='1'/><circle cx='12' cy='17' r='1'/><circle cx='16' cy='17' r='1'/>\
+</svg>");
+}
+
+/* Ensure the control renders with a dark color scheme so system icons stay visible */
+input[type="date"]{
+  color-scheme: dark;
+  padding-right: 40px;                 /* room for the bigger icon */
+  background-image: var(--cal-svg);    /* our high-contrast icon */
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px 18px;          /* tweak if you want it even bigger */
+}
+
+/* Hide the dim WebKit indicator so we don’t get two icons,
+   but keep it clickable area intact (opacity works better than display:none) */
+input[type="date"]::-webkit-calendar-picker-indicator{
+  opacity: 0;                          /* visually hidden — click still opens picker */
+}
+
+/* Extra polish */
+input[type="date"]::-webkit-clear-button,
+input[type="date"]::-webkit-inner-spin-button{ display:none; }
+
+/* If you prefer to KEEP the native icon and just brighten it, uncomment the
+   rules below and use this instead (WebKit/Blink only): */
+
+input[type="date"]::-webkit-calendar-picker-indicator{
+  opacity: 1;
+  filter: invert(1) brightness(1.8) contrast(1.2);  /* brighter on dark UI */
+}
+
+/* ===== End calendar icon tweaks ===== */
