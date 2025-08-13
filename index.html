@@ -1,33 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Finance Control APP</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finance Control</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="root"></div>
 
-    <link rel="stylesheet" href="style.css" />
+<!-- React / ReactDOM (UMD) -->
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 
-    <!-- React 18 UMD (production) -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<!-- PropTypes MUST come before Recharts (fixes oneOfType error) -->
+<script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
 
-    <!-- PropTypes UMD (needed by Recharts v2) -->
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin></script>
+<!-- Recharts (UMD) – use a stable 2.x build for UMD -->
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.6/umd/Recharts.min.js"></script>
+<!-- Optional fallback if your network blocks jsDelivr:
+<script src="https://unpkg.com/recharts@2.12.6/umd/Recharts.min.js"></script>
+-->
 
-    <!-- Recharts v2 UMD (v3 has no UMD) -->
-    <!-- Use jsDelivr to avoid occasional unpkg hiccups -->
-    <script src="https://cdn.jsdelivr.net/npm/recharts@2.10.4/umd/Recharts.min.js" crossorigin></script>
+<!-- XLSX (UMD) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- XLSX UMD -->
-    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin></script>
+<!-- Babel (dev only) -->
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 
-    <!-- Babel (only because you want zero installs) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  </head>
-  <body>
-    <div id="root"></div>
+<!-- Your app (must be last so all globals exist) -->
+<script type="text/babel" src="app.js"></script>
 
-    <!-- Your app (JSX, no build step) -->
-    <script type="text/babel" src="app.js"></script>
-  </body>
+</body>
 </html>
