@@ -114,7 +114,7 @@ const messages = {
     helpTargetsBody: `Set a target amount and date; the chart shows your progress.`,
     rename: "Rename",
     newName: "New name",
-    weeklySummary: "Weekly summary (always 7-day cadence)",
+    weeklySummary: "Summary",
     balance: "Balance",
     cumulative: "Cumulative",
   },
@@ -212,7 +212,7 @@ const messages = {
     helpTargetsBody: `Define monto y fecha; el gráfico muestra tu avance.`,
     rename: "Renombrar",
     newName: "Nuevo nombre",
-    weeklySummary: "Resumen semanal (siempre 7 días)",
+    weeklySummary: "Resumen",
     balance: "Balance",
     cumulative: "Acumulado",
   }
@@ -1018,53 +1018,180 @@ function SectionTable({
 
 
 /* ---------- Weekly Summary (always 7d cadence) ---------- */
-function WeeklySummary({ t, rows }){
-  // compute weekly columns independently of current cadence
-  const weeklyColumns = useMemo(()=> genColumns('7d'), []);
-  const projectedBySection = useMemo(()=>{
+/* ---------- Balance & Cumulative (custom start + cadence) ---------- */
+function WeeklySummary({ t, rows }) {
+  // Local controls for this section only
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10)); // today by default
+  const [cadenceKey, setCadenceKey] = useState('7d'); // keep old behavior initially
+
+  // Helpers specific to this view (anchor the timeline at the chosen startDate)
+  function genColumnsFrom(startISO, cadence) {
+    const s = new Date(startISO || new Date());
+    const e = endOfYear(s);
+    const out = [];
+
+    if (cadence === '1m') {
+      // start at the first of the start month
+      let t = startOfMonth(s);
+      while (t <= e) {
+        out.push({
+          full: new Date(t),
+          label: `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][t.getMonth()]} ${t.getFullYear()}`
+        });
+        t = addMonths(t, 1);
+      }
+      return out;
+    }
+
+    const step = ({ daily:1, "3d":3, "7d":7, "14d":14, "15d":15 }[cadence]) || 7;
+    let t = new Date(s);
+    while (t <= e) {
+      out.push({ full: new Date(t), label: fmt(t) });
+      t = addDays(t, step);
+    }
+    return out;
+  }
+
+  function bucketStartFrom(anchor, date, cadence) {
+    if (cadence === '1m') {
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+    const step = ({ daily:1, "3d":3, "7d":7, "14d":14, "15d":15 }[cadence]) || 7;
+    const msPerDay = 86400000;
+    const days = Math.floor((date - anchor) / msPerDay);
+    const bucketIndex = Math.floor(days / step);
+    const bucketStart = addDays(anchor, bucketIndex * step);
+    return new Date(bucketStart.getFullYear(), bucketStart.getMonth(), bucketStart.getDate());
+  }
+
+  function projectRowToColumnsFrom({ columns, cadenceKey, startAnchor, row }) {
+    const amount = Number(row?.meta?.amount || 0);
+    const start = row?.meta?.startDate ? new Date(row.meta.startDate) : null;
+    const recurrence = row?.meta?.recurrence || 'none';
+    const base = Array(columns.length).fill(null);
+    if (!amount || !start) return base;
+
+    const anchor = new Date(startAnchor);
+    const mapIndex = new Map(columns.map((c, i) => [c.full.toDateString(), i]));
+
+    for (const occ of iterateOccurrences({ startDate: start, recurrence })) {
+      if (occ < anchor) continue; // hide everything before selected start
+      const b = bucketStartFrom(anchor, occ, cadenceKey);
+      const idx = mapIndex.get(b.toDateString());
+      if (idx != null) base[idx] = (base[idx] ?? 0) + amount;
+    }
+    return base;
+  }
+
+  // Build anchored columns and reproject all sections onto them
+  const anchoredColumns = useMemo(
+    () => genColumnsFrom(startDate, cadenceKey),
+    [startDate, cadenceKey]
+  );
+
+  const projectedBySection = useMemo(() => {
     const out = {};
-    for (const s of SECTIONS){
-      out[s.key] = (rows[s.key]||[]).map(r=>{
-        const values = projectRowToColumns({ columns: weeklyColumns, cadenceKey:'7d', row:r });
+    for (const s of SECTIONS) {
+      out[s.key] = (rows[s.key] || []).map(r => {
+        const values = projectRowToColumnsFrom({
+          columns: anchoredColumns,
+          cadenceKey,
+          startAnchor: startDate,
+          row: r
+        });
         return { ...r, values };
       });
     }
     return out;
-  }, [rows, weeklyColumns]);
+  }, [rows, anchoredColumns, cadenceKey, startDate]);
 
-  function sumSection(sectionKey, i){
-    return (projectedBySection[sectionKey] || []).reduce((acc, r)=> acc + (parseFloat(String(r.values[i] ?? 0)) || 0), 0);
+  function sumSection(sectionKey, i) {
+    return (projectedBySection[sectionKey] || []).reduce(
+      (acc, r) => acc + (parseFloat(String(r.values[i] ?? 0)) || 0),
+      0
+    );
   }
 
-  const balanceRow = weeklyColumns.map((_, i) =>
+  // Balance & cumulative using the anchored columns
+  const balanceRow = anchoredColumns.map((_, i) =>
     sumSection("ingresos", i) -
     sumSection("tarjeta", i) -
     sumSection("gastos", i) +
     sumSection("cuenta", i) +
     sumSection("cash", i)
   );
-  let running = 0; const cumulativeRow = balanceRow.map(v => (running += v));
+  let running = 0;
+  const cumulativeRow = balanceRow.map(v => (running += v));
 
   return (
     <div className="card p-4 mt-4">
-      <div className="text-lg font-semibold mb-2">🧮 {t('weeklySummary')}</div>
+      <div className="section-head">
+        <div className="text-lg font-semibold">🧮 {t('weeklySummary')}</div>
+
+        {/* Aside controls (only for this section) */}
+        <div className="flex items-center" style={{ gap: '10px', flexWrap: 'wrap' }}>
+          <div className="flex items-center" style={{ gap: '6px' }}>
+            <label className="text-sm opacity-80">{t('date')}</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              style={{ minWidth: 150 }}
+            />
+          </div>
+
+          <div className="flex items-center" style={{ gap: '6px' }}>
+            <label className="text-sm opacity-80">{t('cadence')}</label>
+            <select value={cadenceKey} onChange={e => setCadenceKey(e.target.value)}>
+              <option value="daily">{t('cadence_daily')}</option>
+              <option value="3d">{t('cadence_3d')}</option>
+              <option value="7d">{t('cadence_7d')}</option>
+              <option value="14d">{t('cadence_14d')}</option>
+              <option value="15d">{t('cadence_15d')}</option>
+              <option value="1m">{t('cadence_1m')}</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="text-sm opacity-80" style={{ marginTop: 6 }}>
+          {/* Small hint: shows that we’re anchoring at the chosen start */}
+          Showing from <strong>{new Date(startDate).toDateString()}</strong> forward
+          ({{
+            daily: 'Daily',
+            '3d': 'Every 3 days',
+            '7d': 'Weekly',
+            '14d': 'Every 2 weeks',
+            '15d': 'Every 15 days',
+            '1m': 'Monthly'
+          }[cadenceKey]}).
+        </div>
+      </div>
+
       <div className="table-wrap">
-        <div style={{ minWidth:'760px' }}>
+        <div style={{ minWidth: '760px' }}>
           <table className="text-sm">
             <thead>
               <tr>
-                <th style={{position:'sticky', left:0, background:'var(--panel)', zIndex:1}}>&nbsp;</th>
-                {weeklyColumns.map((c,i)=> <th key={i}>{c.label}</th>)}
+                <th style={{ position: 'sticky', left: 0, background: 'var(--panel)', zIndex: 1 }}>&nbsp;</th>
+                {anchoredColumns.map((c, i) => <th key={i}>{c.label}</th>)}
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{position:'sticky', left:0, background:'var(--panel)', fontWeight:600}}>{t('balance')}</td>
-                {balanceRow.map((v,i)=> <td key={i} className={v<0?'neg':''}>{money(v)}</td>)}
+                <td style={{ position: 'sticky', left: 0, background: 'var(--panel)', fontWeight: 600 }}>
+                  {t('balance')}
+                </td>
+                {balanceRow.map((v, i) => (
+                  <td key={i} className={v < 0 ? 'neg' : ''}>{money(v)}</td>
+                ))}
               </tr>
               <tr>
-                <td style={{position:'sticky', left:0, background:'var(--panel)', fontWeight:600}}>{t('cumulative')}</td>
-                {cumulativeRow.map((v,i)=> <td key={i} className={v<0?'neg':''}>{money(v)}</td>)}
+                <td style={{ position: 'sticky', left: 0, background: 'var(--panel)', fontWeight: 600 }}>
+                  {t('cumulative')}
+                </td>
+                {cumulativeRow.map((v, i) => (
+                  <td key={i} className={v < 0 ? 'neg' : ''}>{money(v)}</td>
+                ))}
               </tr>
             </tbody>
           </table>
