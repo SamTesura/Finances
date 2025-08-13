@@ -810,62 +810,110 @@ function TargetCard({ t, target, setTarget }){
 }
 
 /* ---------- Section table (concept non-editable + Rename) ---------- */
-function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updateCell, updateLabel, updateMeta, removeRow }){
+/* ---------- Section table (hide past empty columns) ---------- */
+function SectionTable({
+  t, icon, sectionKey, label, columns, rows,
+  addRow, updateCell, updateLabel, updateMeta, removeRow, cadence
+}) {
   const data = rows[sectionKey] || [];
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ label: "", amount: "", startDate: new Date().toISOString().slice(0,10), recurrence: "none" });
+  const [form, setForm] = useState({
+    label: "",
+    amount: "",
+    startDate: new Date().toISOString().slice(0, 10),
+    recurrence: "none"
+  });
 
   const [renameRow, setRenameRow] = useState(null);
   const [renameText, setRenameText] = useState("");
 
-  function onCellKeyDown(e){ if (e.key === 'Enter'){ e.preventDefault(); e.currentTarget.blur(); } }
+  // Current bucket for the chosen cadence (month/week/3d/daily…)
+  const todayBucket = useMemo(() => bucketStartFor(new Date(), cadence), [cadence]);
+
+  // Only show columns that are NOT in the past OR (if in the past) have data in this section
+  const visibleIdxs = useMemo(() => {
+    return columns
+      .map((c, i) => {
+        const isPast = c.full < todayBucket;
+        if (!isPast) return i; // current/future always visible
+        // Past column: only show if this section has any value there
+        const hasValue = (data || []).some(r => r?.values?.[i] != null && r.values[i] !== 0);
+        return hasValue ? i : null;
+      })
+      .filter(i => i !== null);
+  }, [columns, data, todayBucket]);
+
+  function onCellKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  }
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between p-4" style={{borderBottom:'1px solid #23304d'}}>
+      <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid #23304d' }}>
         <div className="flex items-center gap-2">
           <div className="text-xl">{icon}</div>
           <div className="text-lg font-semibold">{label}</div>
         </div>
-        <button className="btn btn-primary" onClick={()=> { if (!modalIsOpen()) setOpen(true); }}>
+        <button className="btn btn-primary" onClick={() => { if (!modalIsOpen()) setOpen(true); }}>
           + {t('add')}
         </button>
       </div>
 
       <div className="table-wrap p-2">
-        <div style={{ minWidth:'760px' }}>
+        <div style={{ minWidth: '760px' }}>
           <table className="text-sm">
             <thead>
               <tr>
                 <th className="sticky-col">{t('concept')}</th>
-                {columns.map((c, i) => (<th key={i}>{c.label}</th>))}
+                {visibleIdxs.map(i => (
+                  <th key={i}>{columns[i].label}</th>
+                ))}
                 <th>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {data.length>0 && (<tr><td colSpan={columns.length+2} style={{height:'.5rem'}} /></tr>)}
+              {data.length > 0 && (
+                <tr>
+                  <td colSpan={visibleIdxs.length + 2} style={{ height: '.5rem' }} />
+                </tr>
+              )}
+
               {data.map(row => (
                 <tr key={row.id}>
                   <td className="sticky-col">
                     <div className="concept-lock">
                       <span className="concept-text" title={row.label || ''}>{row.label || ''}</span>
-                      <button className="btn btn-xs" onClick={()=>{ if (modalIsOpen()) return; setRenameRow(row); setRenameText(row.label||''); }}>
+                      <button
+                        className="btn btn-xs"
+                        onClick={() => { if (modalIsOpen()) return; setRenameRow(row); setRenameText(row.label || ''); }}
+                      >
                         ✏️ {t('rename')}
                       </button>
                     </div>
                   </td>
-                  {columns.map((c, i) => (
+
+                  {visibleIdxs.map(i => (
                     <td key={i}>
                       <input
+                        className="cell-input"
                         type="number"
                         value={row.values[i] ?? ""}
-                        onChange={e=> updateCell(sectionKey, row.id, i, e.target.value === "" ? null : Number(e.target.value))}
+                        onChange={e => updateCell(
+                          sectionKey,
+                          row.id,
+                          i,
+                          e.target.value === "" ? null : Number(e.target.value)
+                        )}
                         onKeyDown={onCellKeyDown}
                       />
                     </td>
                   ))}
+
                   <td>
-                    <button className="btn btn-danger" onClick={()=>removeRow(sectionKey, row.id)}>🗑️</button>
+                    <button className="btn btn-danger" onClick={() => removeRow(sectionKey, row.id)}>🗑️</button>
                   </td>
                 </tr>
               ))}
@@ -876,43 +924,67 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
 
       {/* Add item modal */}
       {open && (
-        <Modal onClose={()=> setOpen(false)} title={`${t('add')} ${label}`}>
+        <Modal onClose={() => setOpen(false)} title={`${t('add')} ${label}`}>
           <form
-            onSubmit={(e)=>{ e.preventDefault();
+            onSubmit={(e) => {
+              e.preventDefault();
               addRow(sectionKey, {
                 label: form.label,
                 amount: parseFloat(String(form.amount)),
                 startDate: form.startDate,
                 recurrence: form.recurrence
               });
-              setForm({ label:"", amount:"", startDate: new Date().toISOString().slice(0,10), recurrence: "none" });
+              setForm({
+                label: "",
+                amount: "",
+                startDate: new Date().toISOString().slice(0, 10),
+                recurrence: "none"
+              });
               setOpen(false);
             }}
           >
             <div className="grid gap-3">
               <div className="grid gap-2">
                 <label className="text-sm">{t('label')}</label>
-                <input autoFocus value={form.label} onChange={e=>setForm(f=>({ ...f, label: e.target.value }))} placeholder="e.g., Rent, Salary, Groceries" />
+                <input
+                  autoFocus
+                  value={form.label}
+                  onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+                  placeholder="e.g., Rent, Salary, Groceries"
+                />
               </div>
               <div className="grid gap-2">
                 <label className="text-sm">{t('amount')}</label>
-                <input type="number" step="any" value={form.amount} onChange={e=>setForm(f=>({ ...f, amount: e.target.value }))} placeholder="1250.00" />
+                <input
+                  type="number"
+                  step="any"
+                  value={form.amount}
+                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                  placeholder="1250.00"
+                />
               </div>
               <div className="grid md-grid-2 gap-3">
                 <div className="grid gap-2">
                   <label className="text-sm">{t('startDate')}</label>
-                  <input type="date" value={form.startDate} onChange={e=>setForm(f=>({ ...f, startDate: e.target.value }))} />
+                  <input
+                    type="date"
+                    value={form.startDate}
+                    onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <label className="text-sm">{t('recurrence')}</label>
-                  <select value={form.recurrence} onChange={e=> setForm(f=>({ ...f, recurrence: e.target.value }))}>
+                  <select
+                    value={form.recurrence}
+                    onChange={e => setForm(f => ({ ...f, recurrence: e.target.value }))}
+                  >
                     {RECURRENCE.map(r => (<option key={r.key} value={r.key}>{t(r.labelKey)}</option>))}
                   </select>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-3">
-              <button type="button" className="btn" onClick={()=> setOpen(false)}>{t('clear')}</button>
+              <button type="button" className="btn" onClick={() => setOpen(false)}>{t('clear')}</button>
               <button type="submit" className="btn btn-primary">{t('add')}</button>
             </div>
           </form>
@@ -921,14 +993,20 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
 
       {/* Rename modal */}
       {renameRow && (
-        <Modal onClose={()=> setRenameRow(null)} title={t('rename')}>
-          <form onSubmit={(e)=>{ e.preventDefault(); updateLabel(sectionKey, renameRow.id, renameText); setRenameRow(null); }}>
+        <Modal onClose={() => setRenameRow(null)} title={t('rename')}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              updateLabel(sectionKey, renameRow.id, renameText);
+              setRenameRow(null);
+            }}
+          >
             <div className="grid gap-2">
               <label className="text-sm">{t('newName')}</label>
-              <input autoFocus value={renameText} onChange={e=> setRenameText(e.target.value)} />
+              <input autoFocus value={renameText} onChange={e => setRenameText(e.target.value)} />
             </div>
             <div className="flex justify-end gap-2 mt-3">
-              <button type="button" className="btn" onClick={()=> setRenameRow(null)}>{t('clear')}</button>
+              <button type="button" className="btn" onClick={() => setRenameRow(null)}>{t('clear')}</button>
               <button type="submit" className="btn btn-primary">{t('save')}</button>
             </div>
           </form>
@@ -937,6 +1015,7 @@ function SectionTable({ t, icon, sectionKey, label, columns, rows, addRow, updat
     </div>
   );
 }
+
 
 /* ---------- Weekly Summary (always 7d cadence) ---------- */
 function WeeklySummary({ t, rows }){
