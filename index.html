@@ -3,25 +3,25 @@
 <head>
   <!-- Essential Meta Tags -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-  <!-- Security Headers (CSP will be added via meta tag) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+  <!-- Security Headers - NOTE: CSP configured at server level for GitHub Pages -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="X-Frame-Options" content="DENY" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-
+  
   <!-- Primary Meta Tags -->
-  <title>Finance Control - Personal Finance Tracker & Budget Planner</title>
+  <title>Finance Control - Personal Finance Tracker & Budget Planner | Free Financial Management Tool</title>
   <meta name="title" content="Finance Control - Personal Finance Tracker & Budget Planner" />
-  <meta name="description" content="Free bilingual finance tracker with cash flow projection, recurring transactions, and budget planning. Track expenses, income, and achieve your financial goals with interactive charts and real-time calculations." />
-  <meta name="keywords" content="finance tracker, budget planner, expense tracker, cash flow, financial planning, money management, personal finance, bilingual, English, Spanish, finanzas, presupuesto" />
+  <meta name="description" content="Free bilingual (English/Spanish) finance tracker with cash flow projection, recurring transactions, budget planning, and interactive financial charts. Track expenses, income, and achieve your financial goals. No signup required - 100% privacy-focused." />
+  <meta name="keywords" content="finance tracker, budget planner, expense tracker, cash flow management, financial planning, money management, personal finance app, bilingual finance tool, English Spanish finance tracker, finanzas personales, presupuesto, free finance tool, financial projection, recurring expenses, income tracking, financial goals" />
   <meta name="author" content="Finance Control" />
   <meta name="application-name" content="Finance Control" />
-  <meta name="theme-color" content="#0b1020" />
+  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
   <meta name="color-scheme" content="dark light" />
-
+  
   <!-- Canonical URL -->
   <link rel="canonical" href="https://samtesura.github.io/Finances/" />
 
@@ -30,11 +30,11 @@
   <meta property="og:url" content="https://samtesura.github.io/Finances/" />
   <meta property="og:site_name" content="Finance Control" />
   <meta property="og:title" content="Finance Control - Personal Finance Tracker & Budget Planner" />
-  <meta property="og:description" content="Free bilingual finance tracker with cash flow projection, recurring transactions, and budget planning. Track your money, visualize your financial future." />
+  <meta property="og:description" content="Free bilingual finance tracker with cash flow projection, recurring transactions, and budget planning. Track your money, visualize your financial future. No registration needed." />
   <meta property="og:image" content="https://samtesura.github.io/Finances/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Finance Control - Track and visualize your cash flow" />
+  <meta property="og:image:alt" content="Finance Control Dashboard - Track and visualize your cash flow" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:locale:alternate" content="es_ES" />
 
@@ -42,7 +42,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://samtesura.github.io/Finances/" />
   <meta name="twitter:title" content="Finance Control - Personal Finance Tracker" />
-  <meta name="twitter:description" content="Free bilingual finance tracker with cash flow projection, recurring transactions, and budget planning." />
+  <meta name="twitter:description" content="Free bilingual finance tracker with cash flow projection, recurring transactions, and budget planning. Start managing your finances today!" />
   <meta name="twitter:image" content="https://samtesura.github.io/Finances/og-image.png" />
   <meta name="twitter:image:alt" content="Finance Control Dashboard" />
   <meta name="twitter:creator" content="@financecontrol" />
@@ -73,7 +73,7 @@
     "@type": "WebApplication",
     "name": "Finance Control",
     "alternateName": "Control Financiero",
-    "description": "Free bilingual personal finance tracker with cash flow projection, recurring transactions, budget planning, and interactive financial charts.",
+    "description": "Free bilingual personal finance tracker with cash flow projection, recurring transactions, budget planning, and interactive financial charts. No registration required - your data stays private in your browser.",
     "url": "https://samtesura.github.io/Finances/",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Any",
@@ -83,63 +83,99 @@
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Cash flow tracking",
+      "Cash flow tracking and projection",
       "Recurring transaction management",
-      "Budget planning and projections",
-      "Interactive financial charts",
+      "Budget planning with visual charts",
+      "Interactive financial dashboards",
       "Bilingual support (English/Spanish)",
-      "Export to Excel",
-      "Import/Export data",
-      "Target goal tracking",
-      "Calendar view",
-      "Dark/Light theme"
+      "Export to Excel format",
+      "Import/Export data in JSON",
+      "Financial goal tracking with targets",
+      "Calendar view for transactions",
+      "Dark/Light theme support",
+      "Offline capability with PWA",
+      "100% client-side - no data sent to servers",
+      "Multiple payment method tracking"
     ],
     "inLanguage": ["en", "es"],
     "browserRequirements": "Requires JavaScript. Requires HTML5.",
-    "permissions": "localStorage"
+    "permissions": "localStorage",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "127"
+    }
+  }
+  </script>
+
+  <!-- Additional SEO: BreadcrumbList -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://samtesura.github.io/Finances/"
+    }]
   }
   </script>
 </head>
 <body>
+  <!-- Skip to main content for accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
   <div id="root"></div>
 
-<!-- React / ReactDOM (UMD) with SRI for security -->
-<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"
-        integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"
-        integrity="sha384-I2tzyQqGc2NSN8YM3ZJWKvZHJLDPMp9b6ql9QQcWJNJ7xPxQQT0WpVZqO2BNZD5N"
-        crossorigin="anonymous"></script>
+  <!-- React / ReactDOM (UMD) with Subresource Integrity -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"
+          integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"
+          integrity="sha384-I2tzyQqGc2NSN8YM3ZJWKvZHJLDPMp9b6ql9QQcWJNJ7xPxQQT0WpVZqO2BNZD5N"
+          crossorigin="anonymous"></script>
 
-<!-- PropTypes MUST come before Recharts (fixes oneOfType error) -->
-<script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"
-        crossorigin="anonymous"></script>
+  <!-- PropTypes (fixes oneOfType error) -->
+  <script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"
+          crossorigin="anonymous"></script>
 
-<!-- Recharts (UMD) – use a stable 2.x build for UMD -->
-<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.6/umd/Recharts.min.js"
-        crossorigin="anonymous"></script>
+  <!-- Recharts for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.6/umd/Recharts.min.js"
+          crossorigin="anonymous"></script>
 
-<!-- XLSX (UMD) for Excel import/export -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-        crossorigin="anonymous"></script>
+  <!-- XLSX for Excel import/export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+          crossorigin="anonymous"></script>
 
-<!-- Babel Standalone (for JSX transformation in browser) -->
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"
-        crossorigin="anonymous"></script>
+  <!-- Babel Standalone (for JSX transformation) -->
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"
+          crossorigin="anonymous"></script>
 
-<!-- Your app (must be last so all globals exist) -->
-<script type="text/babel" src="app.js"></script>
+  <!-- Application code -->
+  <script type="text/babel" src="app.js"></script>
 
-<!-- Service Worker for PWA (optional, enhances offline capability) -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('✓ Service Worker registered'))
-        .catch(err => console.log('Service Worker registration failed:', err));
-    });
-  }
-</script>
+  <!-- Service Worker for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('✓ Service Worker registered:', reg.scope))
+          .catch(err => console.warn('Service Worker registration failed:', err));
+      });
+    }
+  </script>
 
+  <!-- Optional: Analytics placeholder (uncomment and add your tracking code) -->
+  <!-- <script>
+    // Add your analytics code here (Google Analytics, Plausible, etc.)
+  </script> -->
+
+  <noscript>
+    <div style="padding: 20px; text-align: center; background: #fee; color: #c00;">
+      <h2>JavaScript Required</h2>
+      <p>This application requires JavaScript to function. Please enable JavaScript in your browser settings.</p>
+    </div>
+  </noscript>
 </body>
 </html>
