@@ -220,6 +220,51 @@ Contributions are welcome! Please follow these steps:
 - Ensure accessibility compliance
 - Update documentation
 
+### Debug Flags
+
+The application includes debug flags to toggle logging for development:
+
+**Service Worker Debug (`SW_DEBUG`)**
+```javascript
+// In index.html or browser console:
+const SW_DEBUG = true;  // Enable service worker registration logging
+```
+
+**Service Worker Internal Debug (`DEBUG`)**
+```javascript
+// In sw.js:
+const DEBUG = true;  // Enable service worker cache and fetch logging
+```
+
+**Babel Debug (`BABEL_DEBUG`)**
+```javascript
+// In index.html:
+const BABEL_DEBUG = true;  // Show Babel in-browser transformer warnings
+```
+
+To enable debug mode during development:
+1. Edit the flag values in `index.html` or `sw.js`
+2. Or set `window.SW_DEBUG = true` in the browser console (then reload)
+3. View detailed logging in the browser console
+
+### Production Build Considerations
+
+**Current Setup:**
+- JSX is compiled in-browser using Babel Standalone
+- All console warnings are suppressed in production mode
+- Debug flags are set to `false` by default
+
+**Future Optimization:**
+For optimal production performance, consider setting up a build system:
+```bash
+# Example with Vite
+npm install -g vite
+npm install react react-dom
+vite build
+```
+
+This would eliminate the in-browser Babel transformer and reduce bundle size.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

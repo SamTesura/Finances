@@ -1,6 +1,10 @@
 // Service Worker for Finance Control PWA
 // Provides offline functionality and caching
 
+// Debug flag - set to true to enable service worker logging
+// Can be toggled via: navigator.serviceWorker.controller.postMessage({type: 'SET_DEBUG', value: true})
+const DEBUG = false;
+
 const CACHE_NAME = 'finance-control-v1';
 const urlsToCache = [
   './',
@@ -10,17 +14,29 @@ const urlsToCache = [
   './manifest.json'
 ];
 
+// Helper function for debug logging
+function debugLog(...args) {
+  if (DEBUG) {
+    console.log('[SW]', ...args);
+  }
+}
+
+function debugError(...args) {
+  if (DEBUG) {
+    console.error('[SW]', ...args);
+  }
+}
+
 // Install event - cache assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        // Cache opened successfully (suppressed console output)
+        debugLog('Cache opened successfully');
         return cache.addAll(urlsToCache);
       })
       .catch((err) => {
-        // Cache installation failed (suppressed console output in production)
-        // Uncomment for debugging: console.error('Cache installation failed:', err);
+        debugError('Cache installation failed:', err);
       })
   );
 });
@@ -67,7 +83,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // Deleting old cache (suppressed console output)
+            debugLog('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })

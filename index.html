@@ -149,6 +149,31 @@
 
   <!-- Babel Standalone (for JSX transformation) -->
   <!-- Note: For production, precompile JSX using a build tool instead of in-browser transformation -->
+  <!-- Suppress Babel production warning -->
+  <script>
+    // Debug flag for development - set to true to see Babel warnings
+    const BABEL_DEBUG = false;
+
+    if (!BABEL_DEBUG) {
+      // Suppress Babel's "You are using the in-browser Babel transformer" warning in production
+      const originalWarn = console.warn;
+      console.warn = function(...args) {
+        const message = args[0]?.toString() || '';
+        if (message.includes('in-browser Babel transformer') ||
+            message.includes('precompile your scripts')) {
+          return; // Suppress Babel production warning
+        }
+        originalWarn.apply(console, args);
+      };
+
+      // Restore original console.warn after Babel loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          console.warn = originalWarn;
+        }, 1000);
+      });
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"
           crossorigin="anonymous"></script>
 
@@ -157,14 +182,22 @@
 
   <!-- Service Worker for PWA -->
   <script>
+    // Debug flag - set to true to enable service worker logging
+    // Can be toggled in browser console: window.SW_DEBUG = true; (then reload)
+    const SW_DEBUG = false;
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => {
-            // Service worker registered successfully (suppressed console output)
+          .then((registration) => {
+            if (SW_DEBUG) {
+              console.log('[App] Service worker registered successfully:', registration);
+            }
           })
-          .catch(() => {
-            // Service worker registration failed (suppressed console output)
+          .catch((error) => {
+            if (SW_DEBUG) {
+              console.error('[App] Service worker registration failed:', error);
+            }
           });
       });
     }
