@@ -15,11 +15,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('✓ Cache opened');
+        // Cache opened successfully (suppressed console output)
         return cache.addAll(urlsToCache);
       })
       .catch((err) => {
-        console.error('Cache installation failed:', err);
+        // Cache installation failed (suppressed console output in production)
+        // Uncomment for debugging: console.error('Cache installation failed:', err);
       })
   );
 });
@@ -66,7 +67,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
+            // Deleting old cache (suppressed console output)
             return caches.delete(cacheName);
           }
         })
