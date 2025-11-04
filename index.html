@@ -7,11 +7,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
   <!-- Security Headers -->
+  <!-- Note: X-Frame-Options and CSP frame-ancestors only work via HTTP headers, not meta tags -->
+  <!-- GitHub Pages doesn't support custom HTTP headers, so clickjacking protection is limited -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <!-- X-Frame-Options provides clickjacking protection on GitHub Pages where HTTP headers cannot be customized -->
-  <meta http-equiv="X-Frame-Options" content="DENY" />
-  <!-- Content Security Policy with frame-ancestors for enhanced clickjacking protection -->
-  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   
   <!-- Primary Meta Tags -->
@@ -126,8 +124,6 @@
   </script>
 </head>
 <body>
-
-
   <div id="root"></div>
 
   <!-- React / ReactDOM (UMD) with Subresource Integrity -->
@@ -152,6 +148,7 @@
           crossorigin="anonymous"></script>
 
   <!-- Babel Standalone (for JSX transformation) -->
+  <!-- Note: For production, precompile JSX using a build tool instead of in-browser transformation -->
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"
           crossorigin="anonymous"></script>
 
@@ -163,16 +160,15 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('✓ Service Worker registered:', reg.scope))
-          .catch(err => console.warn('Service Worker registration failed:', err));
+          .then(() => {
+            // Service worker registered successfully (suppressed console output)
+          })
+          .catch(() => {
+            // Service worker registration failed (suppressed console output)
+          });
       });
     }
   </script>
-
-  <!-- Optional: Analytics placeholder (uncomment and add your tracking code) -->
-  <!-- <script>
-    // Add your analytics code here (Google Analytics, Plausible, etc.)
-  </script> -->
 
   <noscript>
     <div style="padding: 20px; text-align: center; background: #fee; color: #c00;">
