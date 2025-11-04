@@ -19,20 +19,6 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "screenshot-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Add Transaction",
@@ -60,7 +46,7 @@
     }
   ],
   "share_target": {
-    "action": "/share",
+    "action": "./index.html",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
     "params": {
