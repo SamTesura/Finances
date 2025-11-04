@@ -1,0 +1,21 @@
+# robots.txt for Finance Control
+# https://samtesura.github.io/Finances/
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://samtesura.github.io/Finances/sitemap.xml
+
+# Crawl-delay to be respectful
+Crawl-delay: 1
+
+# Disallow common admin/config files (security best practice)
+Disallow: *.json$
+Disallow: /sw.js
+Disallow: /.git/
+
+# Allow important pages
+Allow: /index.html
+Allow: /style.css
+Allow: /app.js
