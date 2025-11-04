@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Main page (English) -->
+  <url>
+    <loc>https://samtesura.github.io/Finances/</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link
+       rel="alternate"
+       hreflang="es"
+       href="https://samtesura.github.io/Finances/?lang=es" />
+    <xhtml:link
+       rel="alternate"
+       hreflang="en"
+       href="https://samtesura.github.io/Finances/?lang=en" />
+  </url>
+
+  <!-- English version -->
+  <url>
+    <loc>https://samtesura.github.io/Finances/?lang=en</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link
+       rel="alternate"
+       hreflang="es"
+       href="https://samtesura.github.io/Finances/?lang=es" />
+  </url>
+
+  <!-- Spanish version -->
+  <url>
+    <loc>https://samtesura.github.io/Finances/?lang=es</loc>
+    <lastmod>2025-11-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link
+       rel="alternate"
+       hreflang="en"
+       href="https://samtesura.github.io/Finances/?lang=en" />
+  </url>
+
+</urlset>

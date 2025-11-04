@@ -248,13 +248,40 @@ function useTheme(){
   return { mode, setMode };
 }
 
+/* ---------- Security & Validation Utils ---------- */
+// Input sanitization to prevent XSS
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return input;
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+}
+
+// Validate numeric input
+function validateNumber(value, min = -Infinity, max = Infinity) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return null;
+  if (num < min || num > max) return null;
+  return num;
+}
+
+// Validate date input
+function validateDate(dateString) {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return null;
+  // Ensure date is reasonable (between 1900 and 2100)
+  const year = date.getFullYear();
+  if (year < 1900 || year > 2100) return null;
+  return date;
+}
+
 /* ---------- Data + utils ---------- */
 const SECTIONS = [
-  { key: "ingresos", labelKey: "income", icon: "💸" },
-  { key: "tarjeta", labelKey: "creditCard", icon: "💳" },
-  { key: "gastos", labelKey: "expenses", icon: "🧾" },
-  { key: "cuenta", labelKey: "debitAccount", icon: "🏦" },
-  { key: "cash", labelKey: "cash", icon: "💵" },
+  { key: "ingresos", labelKey: "income", icon: "💸", ariaLabel: "Income section" },
+  { key: "tarjeta", labelKey: "creditCard", icon: "💳", ariaLabel: "Credit card section" },
+  { key: "gastos", labelKey: "expenses", icon: "🧾", ariaLabel: "Expenses section" },
+  { key: "cuenta", labelKey: "debitAccount", icon: "🏦", ariaLabel: "Debit account section" },
+  { key: "cash", labelKey: "cash", icon: "💵", ariaLabel: "Cash section" },
 ];
 
 const RECURRENCE = [
@@ -445,25 +472,64 @@ function App() {
   const lastCum = (Array.isArray(cumulativeRow) && cumulativeRow.length) ? cumulativeRow[cumulativeRow.length-1] : 0;
   const safeChartData = Array.isArray(chartData) ? chartData : [];
 
-  // section mutations
+  // section mutations with validation
   function addRow(sectionKey, payload){
+    // Validate and sanitize inputs
+    if (!payload) {
+      toast("Invalid data: payload is required");
+      return;
+    }
+
+    const sanitizedLabel = sanitizeInput(payload.label || "");
+    const validAmount = validateNumber(payload.amount, -999999999, 999999999);
+
+    if (validAmount === null) {
+      toast("Invalid amount: must be a valid number");
+      return;
+    }
+
+    const validDate = validateDate(payload.startDate);
+    if (!validDate) {
+      toast("Invalid date: please select a valid date");
+      return;
+    }
+
     const id = uid();
-    const projected = projectRowToColumns({ columns, cadenceKey: cadence, row: { meta: payload }});
+    const sanitizedPayload = {
+      ...payload,
+      label: sanitizedLabel,
+      amount: validAmount,
+      startDate: validDate.toISOString().slice(0, 10)
+    };
+
+    const projected = projectRowToColumns({ columns, cadenceKey: cadence, row: { meta: sanitizedPayload }});
     setRows(prev => ({
       ...prev,
-      [sectionKey]: [...(prev[sectionKey]||[]), { id, label: (payload && payload.label) || "", values: projected, meta: payload }]
+      [sectionKey]: [...(prev[sectionKey]||[]), { id, label: sanitizedLabel, values: projected, meta: sanitizedPayload }]
     }));
   }
   function updateCell(sectionKey, rowId, col, value){
+    // Validate numeric input before updating
+    let validatedValue = null;
+    if (value !== "" && value !== null) {
+      validatedValue = validateNumber(value, -999999999, 999999999);
+      if (validatedValue === null && value !== "") {
+        // Invalid number, don't update
+        return;
+      }
+    }
+
     setRows(prev => ({
       ...prev,
       [sectionKey]: prev[sectionKey].map(r => r.id===rowId
-        ? { ...r, values: r.values.map((v,i)=> i===col? (value===""||value==null? null : Number(value)) : v) }
+        ? { ...r, values: r.values.map((v,i)=> i===col? validatedValue : v) }
         : r)
     }));
   }
   function updateLabel(sectionKey, rowId, label){
-    setRows(prev => ({ ...prev, [sectionKey]: prev[sectionKey].map(r => r.id===rowId ? { ...r, label } : r) }));
+    // Sanitize label input
+    const sanitizedLabel = sanitizeInput(label || "");
+    setRows(prev => ({ ...prev, [sectionKey]: prev[sectionKey].map(r => r.id===rowId ? { ...r, label: sanitizedLabel } : r) }));
   }
   function updateMeta(sectionKey, rowId, nextMeta){
     setRows(prev => {
@@ -553,31 +619,37 @@ function App() {
   }
 
   return (
-    <div className="container">
-      {/* Toasts */}
-      <div className="toast-stack">
-        {toasts.map(ti=>(<div key={ti.id} className="toast">{String(ti.msg)}</div>))}
+    <div className="container" role="main">
+      {/* Toasts - Accessible notifications */}
+      <div className="toast-stack" role="status" aria-live="polite" aria-atomic="true">
+        {toasts.map(ti=>(<div key={ti.id} className="toast" role="alert">{String(ti.msg)}</div>))}
       </div>
 
-      <header className="header">
+      <header className="header" role="banner">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">📊</div>
+          <div className="text-3xl" role="img" aria-label="Finance dashboard icon">📊</div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{messages[locale].appTitle}</h1>
             <p className="text-sm opacity-80">{messages[locale].appTag}</p>
           </div>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" role="navigation" aria-label="Main navigation">
           <CadenceMenu t={(k)=>messages[locale][k]} cadence={cadence} setCadence={setCadence} />
           <ImportMenu t={(k)=>messages[locale][k]} onImportExcel={importExcelOrCsv} onImportJSON={importJSON} />
           <ExportMenu t={(k)=>messages[locale][k]} onExportJSON={exportJSON} onExportTx={exportTransactionsToXLSX} onExportSections={exportSectionsToXLSX} />
           <HelpDialog t={(k)=>messages[locale][k]} />
           <ThemeMenu t={(k)=>messages[locale][k]} mode={mode} setMode={setMode} />
-          <button className="btn" onClick={()=> setLocale(locale==='en'?'es':'en')} title={messages[locale].language}>🌐 {locale.toUpperCase()}</button>
+          <button
+            className="btn"
+            onClick={()=> setLocale(locale==='en'?'es':'en')}
+            title={messages[locale].language}
+            aria-label={`Switch language to ${locale==='en'?'Spanish':'English'}`}>
+            🌐 {locale.toUpperCase()}
+          </button>
         </div>
       </header>
 
-      <main className="space-y-6">
+      <main className="space-y-6" role="main">
         <Tabs
           tabs={[
             { key:'balance', label:messages[locale].balanceTab },
@@ -648,14 +720,28 @@ function Tabs({ tabs, render }){
   const [active, setActive] = useState(tabs[0]?.key || '');
   return (
     <div className="w-full">
-      <div className="tabs-grid">
+      <div className="tabs-grid" role="tablist" aria-label="Finance sections">
         {tabs.map(tb=>(
-          <button key={tb.key} onClick={()=> setActive(tb.key)} className={`btn ${active===tb.key ? 'btn-primary' : ''}`}>
+          <button
+            key={tb.key}
+            onClick={()=> setActive(tb.key)}
+            className={`btn ${active===tb.key ? 'btn-primary' : ''}`}
+            role="tab"
+            aria-selected={active===tb.key}
+            aria-controls={`tabpanel-${tb.key}`}
+            id={`tab-${tb.key}`}
+            tabIndex={active===tb.key ? 0 : -1}>
             {tb.label}
           </button>
         ))}
       </div>
-      <div>{render(active)}</div>
+      <div
+        role="tabpanel"
+        id={`tabpanel-${active}`}
+        aria-labelledby={`tab-${active}`}
+        tabIndex={0}>
+        {render(active)}
+      </div>
     </div>
   );
 }
@@ -664,7 +750,11 @@ function CadenceMenu({ t, cadence, setCadence }){
   return (
     <div className="flex items-center gap-2">
       <label className="text-sm opacity-80" htmlFor="cadence">{t('cadence')}</label>
-      <select id="cadence" value={cadence} onChange={(e)=> setCadence(e.target.value)}>
+      <select
+        id="cadence"
+        value={cadence}
+        onChange={(e)=> setCadence(e.target.value)}
+        aria-label="Select timeline cadence">
         <option value="daily">{t('cadence_daily')}</option>
         <option value="3d">{t('cadence_3d')}</option>
         <option value="7d">{t('cadence_7d')}</option>
@@ -759,9 +849,9 @@ function BalanceTab({
 
 function KpiCard({ title, value }){
   return (
-    <div className="card p-4">
-      <div className="uppercase tracking-wide text-xs opacity-70">{title}</div>
-      <div className="text-3xl font-semibold">{value || "—"}</div>
+    <div className="card p-4" role="region" aria-label={title}>
+      <div className="uppercase tracking-wide text-xs opacity-70" id={`kpi-label-${title}`}>{title}</div>
+      <div className="text-3xl font-semibold" aria-labelledby={`kpi-label-${title}`}>{value || "—"}</div>
     </div>
   );
 }

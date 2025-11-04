@@ -1,34 +1,97 @@
 :root{
-  --bg:#0b1020;
-  --bg2:#0d1326;
+  /* Dark theme with WCAG AAA compliant colors (7:1 contrast ratio) */
+  --bg:#0a0f1e;
+  --bg2:#0d1429;
   --panel:#0f172a;
   --panelSoft:#111a34;
-  --text:#e5e7eb;
-  --muted:#96a2c7;
+  --text:#f0f3f9; /* Increased from #e5e7eb for better contrast */
+  --muted:#a8b4d1; /* Increased from #96a2c7 for better contrast */
   --accent:#7dd3fc;
-  --accent2:#a78bfa;
-  --ok:#10b981;
-  --warn:#f59e0b;
-  --bad:#ef4444;
-  --border:#23304d;
+  --accent2:#b4a3ff; /* Lightened from #a78bfa for better contrast */
+  --ok:#12d98f; /* Lightened from #10b981 for better contrast */
+  --warn:#ffb627; /* Lightened from #f59e0b for better contrast */
+  --bad:#ff6b6b; /* Lightened from #ef4444 for better contrast */
+  --border:#2d3f5f; /* Lightened from #23304d for better visibility */
   --shadow:rgba(0,0,0,.35);
+  --focus-ring:#60a5fa; /* Blue focus ring for accessibility */
 
-  /* comfortable but compact defaults */
-  --card-pad: 12px;
-  --gap: 14px;
-  --cell-h: 36px;
+  /* Layout */
+  --card-pad: 14px;
+  --gap: 16px;
+  --cell-h: 40px;
+  --border-radius: 12px;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light theme support */
+:root.light {
+  --bg:#f8fafc;
+  --bg2:#f1f5f9;
+  --panel:#ffffff;
+  --panelSoft:#fefefe;
+  --text:#0f172a;
+  --muted:#475569;
+  --accent:#0284c7;
+  --accent2:#7c3aed;
+  --ok:#059669;
+  --warn:#d97706;
+  --bad:#dc2626;
+  --border:#cbd5e1;
+  --shadow:rgba(0,0,0,.08);
+  --focus-ring:#3b82f6;
 }
 
 /* Reset & base */
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+/* Smooth scrolling */
+html{
+  scroll-behavior: smooth;
+  height:100%;
+}
+
 body{
+  min-height:100%;
   margin:0;
   background:
     radial-gradient(1200px 600px at 20% 0%, #0b1226 0%, #090f1c 35%, #080d18 100%),
     var(--bg);
   color:var(--text);
-  font: 18px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  font: 18px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Focus styles for accessibility */
+*:focus{
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible){
+  outline: none;
+}
+
+*:focus-visible{
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Layout */
@@ -44,9 +107,15 @@ body{
 .card{
   background: linear-gradient(180deg, var(--panel) 0%, var(--panelSoft) 100%);
   border:1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px var(--shadow);
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 30px var(--shadow), 0 4px 6px rgba(0,0,0,.1);
   padding: var(--card-pad);
+  transition: var(--transition);
+}
+
+.card:hover{
+  box-shadow: 0 12px 35px var(--shadow), 0 6px 10px rgba(0,0,0,.15);
+  transform: translateY(-2px);
 }
 
 /* Make pre-sections comfortably spaced from sections below */
@@ -87,22 +156,94 @@ body{
   font-size: 18px; line-height: 1.4; font-weight: 500;
 }
 
-/* Buttons */
+/* Buttons with improved accessibility */
 .btn{
-  background: transparent; color: var(--text);
+  background: transparent;
+  color: var(--text);
   border:1px solid var(--border);
-  padding: 6px 10px; border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
   margin-bottom: 5px;
-  cursor:pointer; transition:.2s ease all; height: var(--cell-h);
+  cursor:pointer;
+  transition: var(--transition);
+  height: var(--cell-h);
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before{
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before{
+  width: 300px;
+  height: 300px;
 }
 
 .justify-end{margin-top: 15px;}
-.btn:hover{ background:#152241; }
-.btn-primary{ background: linear-gradient(180deg,#4856b8 0%,#3543a3 100%); border-color:#3b4bb0; }
-.btn-primary:hover{ filter: brightness(1.08); }
-.btn-danger{ background:#3b0f0f; border-color:#5f1d1d; color:#fca5a5; }
-.btn-ghost{ background: linear-gradient(180deg,#b84848 0%,#a33535 100%); border-color:#b03b3b; }
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
+.btn:hover{
+  background:#1a2d4d;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,.2);
+}
+
+.btn-primary{
+  background: linear-gradient(135deg,#5563d1 0%,#4451bf 100%);
+  border-color:#4856c7;
+  color:#ffffff;
+  font-weight: 600;
+}
+.btn-primary:hover{
+  filter: brightness(1.12);
+  box-shadow: 0 6px 12px rgba(69,81,191,.4);
+}
+
+.btn-danger{
+  background:#4a1515;
+  border-color:#732424;
+  color:#ffc9c9;
+}
+.btn-danger:hover{
+  background:#5f1d1d;
+  border-color:#8f2f2f;
+}
+
+.btn-ghost{
+  background: linear-gradient(135deg,#c85555 0%,#b03f3f 100%);
+  border-color:#c04848;
+  color:#ffffff;
+}
+.btn-ghost:hover{
+  filter: brightness(1.12);
+}
+
+.btn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+  transform: none;
+}
+
+.btn:active{
+  transform: translateY(0);
+}
+
+/* Button focus states */
+.btn:focus-visible{
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 
 /* Section header bar */
 .section-head{
@@ -148,12 +289,51 @@ tbody td{
 
 /* Inputs: readable; but truly empty cells look blank until hover/focus */
 input, select{
-  width:fit-content; height: var(--cell-h);
-  background:#0a1226; border:1px solid #1e2a47; color:var(--text);
-  padding: 4px 6px; border-radius:8px; outline:none; font-size: 18px;
+  width:fit-content;
+  height: var(--cell-h);
+  background:#0a1226;
+  border:1px solid #1e2a47;
+  color:var(--text);
+  padding: 6px 10px;
+  border-radius:8px;
+  outline:none;
+  font-size: 16px;
+  transition: var(--transition);
 }
-input:focus, select:focus{ border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.25); }
-input[type="number"]{ text-align:right; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+input:hover, select:hover{
+  border-color: #2d4068;
+  background: #0d1630;
+}
+
+input:focus, select:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(125,211,252,.2);
+  background: #0f1833;
+}
+
+input[type="number"]{
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Ensure inputs are accessible on mobile */
+input::placeholder, select::placeholder{
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* Remove spinner buttons on number inputs for cleaner look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"]{
+  -moz-appearance: textfield;
+}
 
 /* “Blank until edit”: any numeric input with empty value renders invisible until hover/focus */
 td input.cell-input[value=""]{
@@ -209,22 +389,91 @@ thead th.date-col{ font-size: 13px; padding: 10px 10px; }
 .minw-900{ min-width:900px; }
 .minw-1080{ min-width:1080px; }
 
-/* Responsive tweaks */
+/* Responsive tweaks - Mobile-first approach */
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 575px){
+  body{ font-size: 16px; }
+  .container{ padding: 12px; }
+  .header{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .header-actions{
+    width:100%;
+    gap:6px;
+    flex-direction: column;
+  }
+  .header-actions .btn{
+    width: 100%;
+    justify-content: center;
+  }
+  .card{ padding: 10px; }
+  .chart-card{ height: 250px; padding-bottom: 5vh; }
+  .sticky-col{ min-width: 140px; font-size: 14px; }
+  .btn{ padding: 6px 10px; font-size: 14px; }
+  .summary-grid{ grid-template-columns: 1fr; gap: 10px; }
+  .tabs-grid{ grid-template-columns: 1fr; }
+  input, select{ font-size: 16px; } /* Prevent zoom on iOS */
+  .modal-card{ width: 95vw; }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767px){
+  .chart-card{ height: 280px; }
+  .sticky-col{ min-width: 160px; }
+  .tabs-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 1023px){
+  .chart-card{ height: 300px; }
+  .sticky-col{ min-width: 180px; }
+  .tabs-grid{ grid-template-columns: repeat(2, 1fr); }
+  .summary-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Large devices (desktops, 1024px and up) */
+@media (min-width: 1024px){
+  .chart-card{ height: 340px; }
+  .tabs-grid{ grid-template-columns: repeat(4, 1fr); }
+  .summary-grid{ grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Extra large devices (large desktops, 1536px and up) */
 @media (min-width: 1536px){
   .pre-sections{ max-width: 1280px; }
-  .chart-card{ height: 360px; }
+  .chart-card{ height: 380px; }
+  .container{ max-width: 1400px; }
 }
-@media (max-width: 1024px){
-  .chart-card{ height: 320px; }
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .btn{ min-height: 44px; } /* Apple HIG minimum touch target */
+  input, select{ min-height: 44px; }
+  .calendar-day{ min-height: 80px; }
 }
-@media (max-width: 768px){
-  .chart-card{ height: 280px; }
-  .sticky-col{ min-width: 180px; }
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root{
+    --border:#4a5f8f;
+    --text:#ffffff;
+  }
+  .btn{ border-width: 2px; }
+  input, select{ border-width: 2px; }
 }
-@media (max-width: 640px){
-  .header{ flex-direction:column; align-items:flex-start; gap:10px; }
-  .header-actions{ width:100%; gap:6px; }
-  .header-actions .btn{ flex:1 1 auto; }
+
+/* Dark mode system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light){
+    /* Already using dark theme by default */
+  }
+}
+
+/* Print styles */
+@media print {
+  body{ background: white; color: black; }
+  .header-actions, .btn{ display: none !important; }
+  .card{ box-shadow: none; border: 1px solid #ccc; }
+  .chart-card{ page-break-inside: avoid; }
 }
 
 /* ===== Brighter, larger calendar icon for <input type="date"> ===== */
