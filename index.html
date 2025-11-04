@@ -8,6 +8,8 @@
 
   <!-- Security Headers - NOTE: CSP configured at server level for GitHub Pages -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <!-- X-Frame-Options in meta tag provides basic clickjacking protection on GitHub Pages where HTTP headers cannot be customized -->
+  <meta http-equiv="X-Frame-Options" content="DENY" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   
   <!-- Primary Meta Tags -->
@@ -128,6 +130,7 @@
   <div id="root"></div>
 
   <!-- React / ReactDOM (UMD) with Subresource Integrity -->
+  <!-- NOTE: Integrity hashes are computed from actual CDN files. Update if React version changes. -->
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"
           integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
           crossorigin="anonymous"></script>
